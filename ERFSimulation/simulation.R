@@ -46,7 +46,7 @@ create_simulation <- function(n_vars = 100, n_obs = 2000,
                               optional_lengths = c(1, 2),
                               weights = c(1/2, 1/2),
                               mu_beta = 0, sigma_beta = 5, 
-                              mu_epsilon = 0, sigma_epsilon = 0.025,
+                              mu_epsilon = 0, sigma_epsilon = 0.25,
                               format = F){
   
   # 1. Generate input variables x_1,...,x_nvars, 
