@@ -37,12 +37,11 @@ source("erf_main.R")
 # Several patients decided not to answer some of the questions because of
 # privacy concerns (missing values).
 
-setwd("C:/Users/ebner/Documents/MasterArbeit/My_Implementation/Experiments/Cancer")
 data <- read.csv(file = 'risk_factors_cervical_cancer.csv', header = T)
 
 data <- prepare_cervicalcancer_data(data = data, del_maj_missing = T,
                                     add_NA_features = F, impute_missing = T,
-                                    target = "Risk1", balance = F)
+                                    target = "Risk1", balance = T)
 
 
 
@@ -124,9 +123,8 @@ linterms <- c("Number.of.sexual.partners", "Age", "Num.of.pregnancies",
 
 # Model
 erf_cancer <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
-                            expert_rules = expert_rules,
-                            confirmatory_rules = expert_rules, 
-                            linterms = linterms)
+                            expert_rules = expert_rules, 
+                            linterms = linterms, confirmatory_lins = linterms)
 
 
 erf_cancer
