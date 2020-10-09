@@ -8,8 +8,6 @@
 
 #=============================== LIBRARIES =====================================
 
-#.libPaths("C:/Users/ebner/Documents/R/win-library/4.0")
-
 #library(pre)
 #library(purrr)
 #library(rlist)

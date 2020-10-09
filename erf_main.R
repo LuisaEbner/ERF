@@ -6,10 +6,7 @@
 ################################################################################
 ################################################################################
 
-# Packages 
-.libPaths("C:/Users/ebner/Documents/R/win-library/4.0")
-
-# Libraries
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Libraries~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(gbm)
 library(inTrees)
 library(randomForest)
@@ -26,12 +23,8 @@ library(mlbench)
 library(Metrics)
 
 # External functions
-setwd("C:/Users/ebner/Documents/MasterArbeit/My_Implementation/ERFSimulation")
 source("simulation.R")
-
-setwd("C:/Users/ebner/Documents/MasterArbeit/My_Implementation/ExpertRuleFit")
 source("erf_auxiliaries.R")
-
 # functions implemented by Malte Nalenz
 source("take1.R")
 source("genrulesgbm.R")
@@ -39,7 +32,7 @@ source("genrulesrf.R")
 source("createX.R")
 source("create_test.R")
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Expert RuleFit
 
@@ -84,12 +77,11 @@ source("create_test.R")
 ##'  if print_output = T: all relevant list elements are additionally printed to the console
 ##'                  
 
-
 ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                          name_rules = T, expert_rules = NULL, confirmatory_rules = NULL,
                          name_lins = T, linterms=NULL, confirmatory_lins = NULL,
-                         ntree=250, ensemble= "RF", mix=0.5, L=4, S=6, minsup=.025, 
-                         intercept=F, corelim = 1, 
+                         ntree=250, ensemble= "GBM", mix=0.5, L=4, S=6, minsup=.025, 
+                         intercept=T, corelim = 1, 
                          alpha = 1, nfolds = 10, type.measure = "class",
                          s = "lambda.min", print_output = T) {
   
@@ -119,10 +111,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
     if(name_rules == T){
       expert_rules <- names_to_positions(X, expert_rules)
     }
-  } else{
-    expert_rules <- c()
-  }
-  
+  } 
   
   if(!(is.null(confirmatory_rules))){
     if(name_rules == T){
@@ -131,15 +120,9 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
     if(!(all(confirmatory_rules %in% expert_rules))){
       stop("confirmatory_rules needs to be a subset of expert_rules.")
     }
-  } else{
-    confirmatory_rules <- c()
-  }
+  } 
   
-  if(is.null(linterms)){
-    linear = F
-    linterms <- c()
-  } else {
-    linear = T
+  if(!(is.null(linterms))){
     if(name_lins == T){
       linterms <- names_to_numbers(X, linterms)
     }
@@ -159,8 +142,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
     if(!(all(confirmatory_lins %in% linterms))){
       stop("confirmatory_lins needs to be a subset of linterms.")
     }
-  } else {
-    confirmatory_lins <- c()
+    confirmatory_lins <- paste("X", confirmatory_lins, sep = "")
   }
   
   
@@ -180,13 +162,13 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
   if(S<1){
     stop("Parameter S needs to be >=1.")
   }
-
+  
   if((minsup<0)|(minsup>=1)){
     stop("invalid choice for minimum support, please chose a 
          value between 0 and 1.")
   }
   
-
+  
   if(is.logical(intercept)==F){
     stop("Invalid intercept choice. Must be TRUE or FALSE.")
   }
@@ -200,12 +182,12 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
     stop("Invalid choice for nfolds. Number of cv folds needs to be
          an integer greater greater or equal to one.")
   }
-
+  
   
   if(is.logical(print_output)==F){
     stop("Invalid choice regarding output print. Must be TRUE or FALSE.")
   }
-
+  
   
   # tree ensemble -> rule ensemble generation
   N = length(y)
@@ -223,9 +205,11 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
     print("invalid Tree ensemble choice")
   }
   
-  # add expert rules to rule ensemble
-  rulesf <- c(rulesf, expert_rules)
-  
+  # add expert rules to rule ensemble if present
+  if(!(is.null(expert_rules))){
+    rulesf <- c(rulesf, expert_rules)
+  }
+
 
   # create data matrix with rules as columns
   dt = createX(X = X, rules = rulesf, t = minsup, corelim = corelim)
@@ -235,15 +219,16 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
   rulesFin = dt[[2]]
   
   # get the expert rules, that were removed from createX due to low support or high correlation
-  removed_expertrules <- c()
-  
-  if (length(expert_rules) > 0){
+  if (!(is.null(expert_rules))){
+    removed_expertrules <- c()
     for (i in 1:length(expert_rules)){
       if(!(expert_rules[i] %in% rulesFin)){
         removed_expertrules <- c(removed_expertrules, expert_rules[i])
       }
     }
     removed_expertrules
+  } else{
+    removed_expertrules <- 0
   }
   
   # standardize linear terms 
@@ -256,140 +241,143 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
     for(l in 1:length(linterms)){
       X[,linterms[l]] = (X[,linterms[l]]-mul[l])/sdl[l]
     }
-  } else if(length(linterms)==1) {
+  } else if(length(linterms)==1){
     mul = mean(X[,linterms])
     sdl = sd(X[,linterms])
     X[,linterms] = (X[,linterms] - mul)/sdl
   }
   
   # add linear terms and intercept (optional) to rule matrix Xt
-  if(linear==FALSE){
+  if(is.null(linterms)){
     if(intercept==TRUE){
-      Xt = cbind(rep(1, times= dim(Xr)[1]),Xr)
-    } else {
-      Xt = Xr
+      Xt = as.data.frame(cbind(rep(1, times= dim(Xr)[1]),Xr))
+    } else{
+      Xt = as.data.frame(Xr)
     }
-  } else {
-    if(intercept==TRUE){
-      Xt = cbind(rep(1, times=dim(X)[1]),X[,linterms], Xr)
-    } else {
-      Xt = cbind(X[,linterms], Xr)
-    }
+  } else{
+      if(intercept==TRUE){
+        Xt = as.data.frame(cbind(rep(1, times=dim(X)[1]), X[,linterms], Xr))
+      } else{
+        Xt = as.data.frame(cbind(X[,linterms], Xr))
+      }
+  } 
+  
     
     # change column names: intercept = X0, linear terms = X1,...Xp, rules as specified conditions
-    if(intercept == TRUE & length(linterms) > 0){
+    if((intercept == TRUE) & (!(is.null(linterms)))){
       colnames(Xt)[1] <- "X0"
       colnames(Xt)[2:(length(linterms)+1)] <- paste("X", linterms, sep = "")
       colnames(Xt)[(length(linterms)+2): ncol(Xt)] <- rulesFin
-    } else if (intercept == TRUE & length(linterms) == 0){
+    } else if ((intercept == TRUE) & (is.null(linterms))){
       colnames(Xt)[1] <- "X0"
       colnames(Xt)[2: ncol(Xt)] <- rulesFin
-    } else if (intercept == FALSE & length(linterms) > 0){
+    } else if ((intercept == FALSE) & (!(is.null(linterms)))){
       colnames(Xt)[1:length(linterms)] <- paste("X", linterms, sep = "")
       colnames(Xt)[(length(linterms)+1): ncol(Xt)] <- rulesFin
-    } else{      
+    } else{ 
       colnames(Xt) <- rulesFin
     }
-    
-    # define columns to be included in the final model without penalization
-    if(length(confirmatory_lins)>0){
-      confirmatory_lins <- paste("X", confirmatory_lins, sep = "")
-    } else {
-      confirmatory_lins <- c()
-    }
+  
     
     
     # get the column indices of the confirmatory terms
-    if(length(confirmatory_rules) > 0|length(confirmatory_lins) > 0){
+    if((!(is.null(confirmatory_rules))) & (!(is.null(confirmatory_lins)))){
       confirmatory_terms <- c(confirmatory_rules, confirmatory_lins)
-      conf_cols <- c()
+    } else if ((is.null(confirmatory_rules)) & (!(is.null(confirmatory_lins)))){
+      confirmatory_terms <- confirmatory_lins
+    } else if ((!(is.null(confirmatory_rules))) & (is.null(confirmatory_lins))){
+      confirmatory_terms <- confirmatory_rules
+    } else {
+      confirmatory_terms <- NULL
+    }
+      
+    if(!(is.null(confirmatory_terms))){
+      confirmatory_cols <- c()
       for(i in 1: length(confirmatory_terms)){
         if(confirmatory_terms[i] %in% colnames(Xt)){
-          conf_cols <- c(conf_cols, which(colnames(Xt) == confirmatory_terms[i]))
+          confirmatory_cols <- c(confirmatory_cols, which(colnames(Xt) == confirmatory_terms[i]))
         }
       }
-      confirmatory_cols <- conf_cols
     } else{
-      confirmatory_terms <- c()
-      confirmatory_cols <- c()
+      confirmatory_cols <- NULL
     }
-    
-    
+      
+
     if(is.null(Xtest) == T){
-    regmodel = regularized_regression(X=Xt, y=y, Xtest = NULL, ytest =NULL,
-                                      type_measure = type.measure,
-                                      nfolds = nfolds,
-                                      s = s,
-                                      confirmatory_cols = confirmatory_cols,
-                                      alpha = alpha, print_output = print_output)
-    
-    model_features <- regmodel$Results$features
-    prop_ek <- expert_occurences(expert_rules, confirmatory_lins, model_features)
-    
-    
-    if(print_output == T){
-      exp_info <- expert_output(expert_rules, removed_expertrules, confirmatory_lins, prop_ek)
-      output <- list(regmodel, exp_info)
+      regmodel = regularized_regression(X=Xt, y=y, Xtest = NULL, ytest =NULL,
+                                        type_measure = type.measure,
+                                        nfolds = nfolds,
+                                        s = s,
+                                        confirmatory_cols = confirmatory_cols,
+                                        alpha = alpha, print_output = print_output)
+      
+      model_features <- regmodel$Results$features
+      prop_ek <- expert_occurences(expert_rules, confirmatory_lins, model_features)
       
       
-      out = c(output, Train = Xt , Model = regmodel$Results, 
-              Features = regmodel$Results$features, 
-              Coefficients = regmodel$Results$coefficients, 
-              Nterms = regmodel$n_terms, ExpertRules = expert_rules, 
-              ConfTerms = confirmatory_terms,
-              Removed_ExpertRules = removed_expertrules,  PropEK = prop_ek)
-    } else{
+      if(print_output == T){
+        exp_info <- expert_output(expert_rules, removed_expertrules, confirmatory_lins, prop_ek)
+        #output <- list(regmodel, exp_info)
+        
+        
+        out = c(Train = Xt , Model = regmodel$Results, 
+                Features = regmodel$Results$features, 
+                Coefficients = regmodel$Results$coefficients, 
+                Nterms = regmodel$n_terms, ExpertRules = expert_rules, 
+                ConfTerms = confirmatory_terms,
+                Removed_ExpertRules = removed_expertrules,  PropEK = prop_ek)
+      } else{
+        
+        out = c(Train = Xt , Model = regmodel$Results, 
+                Features = regmodel$Results$features, 
+                Coefficients = regmodel$Results$coefficients, 
+                Nterms = regmodel$n_terms, ExpertRules = expert_rules, 
+                ConfTerms = confirmatory_terms,
+                Removed_ExpertRules = removed_expertrules,  PropEK = prop_ek)
+      }
       
-      out = c(Train = Xt , Model = regmodel$Results, 
-              Features = regmodel$Results$features, 
-              Coefficients = regmodel$Results$coefficients, 
-              Nterms = regmodel$n_terms, ExpertRules = expert_rules, 
-              ConfTerms = confirmatory_terms,
-              Removed_ExpertRules = removed_expertrules,  PropEK = prop_ek)
-    }
+      class(out) = "ExpertRulemodel"
       
-    class(out) = "ExpertRulemodel"
-    
-    # else if test data is present:
     }else{
       
       #create rules.
       Xrt = createXtest(Xtest, rulesFin)
       
       ##preparing test data set. Standardize linear terms Xtest
-      if(length(linterms > 0)){
+      if(!(is.null(linterms))){
         for(l in 1:length(linterms)){
           Xtest[,linterms[l]] = (Xtest[,linterms[l]]-mul[l])/sdl[l]
         }
       }
       
       #combine to data frame
-      if(linear==FALSE){
+      if(is.null(linterms)){
         if(intercept==TRUE) {
-          X_test = cbind(rep(1, times = dim(Xrt)[1]), Xrt)
+          X_test = as.data.frame(cbind(rep(1, times = dim(Xrt)[1]), Xrt))
         }else{X_test = Xrt}
       } else {
         if(intercept==TRUE) {
-          X_test = cbind(rep(1, times = dim(Xrt)[1]), Xtest[,linterms], Xrt)
+          X_test = as.data.frame(cbind(rep(1, times = dim(Xrt)[1]), Xtest[,linterms], Xrt))
         }else{
-          X_test = cbind(Xtest[,linterms], Xrt)
+          X_test = as.data.frame(cbind(Xtest[,linterms], Xrt))
         }
       }
       
       # adapt column names
-      if(intercept == TRUE & length(linterms) > 0){
+      if((intercept == TRUE) & (!(is.null(linterms)))){
         colnames(X_test)[1] <- "X0"
         colnames(X_test)[2:(length(linterms)+1)] <- paste("X", linterms, sep = "")
         colnames(X_test)[(length(linterms)+2): ncol(X_test)] <- rulesFin
-      } else if (intercept == TRUE & length(linterms) == 0){
+      } else if ((intercept == TRUE) & (is.null(linterms))){
         colnames(X_test)[1] <- "X0"
         colnames(X_test)[2: ncol(X_test)] <- rulesFin
-      } else if (intercept == FALSE & length(linterms) > 0){
+      } else if (intercept == FALSE & (!(is.null(linterms)))){
         colnames(X_test)[1:length(linterms)] <- paste("X", linterms, sep = "")
         colnames(X_test)[(length(linterms)+1): ncol(X_test)] <- rulesFin
       } else{      
         colnames(X_test) <- rulesFin
       }
+      
       
       # add prediction and error to model output
       regmodel = regularized_regression(X = Xt, y = y, Xtest = X_test,
@@ -403,12 +391,12 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
       model_features <- regmodel$Results$features
       prop_ek <- expert_occurences(expert_rules, confirmatory_lins, model_features)
       
-
+      
       if(print_output == T){
         exp_info <- expert_output(expert_rules, removed_expertrules, confirmatory_lins, prop_ek)
         output <- list(regmodel, exp_info)
         
-        out = list(output, Train = Xt, Test = X_test, Model = regmodel$Results, 
+        out = list(Train = Xt, Test = X_test, Model = regmodel$Results, 
                    Features = regmodel$Results$features, 
                    Coefficients = regmodel$Results$coefficients, 
                    Nterms = regmodel$n_terms,
@@ -433,10 +421,10 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
       
       class(out) = "ExpertRulemodel"
       
-      }
     }
-    out
+  out
 }
+
 
     
 #===============================================================================
@@ -445,52 +433,43 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
 
 # Example
 # set.seed(179)
-simulation <- create_simulation(n_vars = 20, n_obs = 1000,
-                                mu = 0, sigma = 1, 
-                                n_lin_preds = 3,
-                                n_rule_vars = 10, 
-                                n_rel_rules = 5, 
-                                optional_lengths = c(1, 2),
-                                weights = c(1/2, 1/2),
-                                mu_beta = 0, sigma_beta = 5, 
-                                mu_epsilon = 0, sigma_epsilon = 0.025, 
-                                format = T)
+# simulation <- create_simulation(n_vars = 100, n_obs = 1000,
+#                                mu = 0, sigma = 1, 
+#                                n_rule_vars = 10, 
+#                                n_rel_rules = 10, 
+#                                optional_lengths = c(1, 2, 3, 4),
+#                                weights = c(1/3, 1/4, 1/4, 1/6),
+#                                mu_beta = 0, sigma_beta = 5, 
+#                                mu_epsilon = 0, sigma_epsilon = 0.1)
 
 
 # Dataset of relevant predictors + y 
-# rel_predictor_data <- simulation[[1]]
+#rel_predictor_data <- simulation[[1]]
 
 
 # Data
-data <- simulation[[2]]
-X <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)[[1]]
-y <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)[[2]]
-
-Xtest <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)[[3]]
-ytest <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)[[4]]
+#data <- simulation[[2]]
+#sets <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)
+#X <- sets[[1]]
+#y <- sets[[2]]
+#Xtest <- sets[[3]]
+#ytest <- sets[[4]]
 
 # Expert knowledge
-expert_knowledge <- simulation[[3]]
-expert_rules <- expert_knowledge[[1]]
-lins <- as.numeric(expert_knowledge[[2]])
-lins
-confirmatory_lins <- c(1, 6)
+#expert_rules <- simulation[[3]]
+
 
 # ExpertRuleFit Modell
-erfmodel <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest, 
-                          name_rules = F, expert_rules = expert_rules,
-                          name_lins = F, linterms = lins, confirmatory_lins = confirmatory_lins)
+#erfmodel <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest, name_rules = F, expert_rules = expert_rules)
+#model <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest)
 
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#' TODO: in simulation linterms weglassen
-#' cv.glmnet in einer funktion
-#' gr????eres epsilon in der Simulation
-#' relationale pfade, setwd
-#' 
-#' variable importance, wie viel Prozent der Varianz werden durch Expert-Rules erkl??rt
-#' mit pre package vergleichen
-#' 
-#' Anruf ??rzte
-#' Tortoise Git
+#' TODO:
+#' variable importance, wie viel Prozent der Varianz werden durch Expert-Rules erklaert
+#' mit pre package/ RuleFit by Friedman vergleichen
+#' Zwang zu Einfachen Modellen: max Anzahl Terme in glmnet festlegen, ntrees, depth verkleinern
+#' Anruf Aerzte
+
 

@@ -52,6 +52,6 @@ prepare_diabetes_data <- function(data, imp_method = "rf"){
 
 
 # EXAMPLE
-setwd('C:/Users/ebner/Documents/MasterArbeit/Daten/Diabetes')
-data <- read.csv(file = 'diabetes.csv', header = T)
-data <- prepare_diabetes_data(data)
+# setwd('C:/Users/ebner/Documents/MasterArbeit/Daten/Diabetes')
+# data <- read.csv(file = 'diabetes.csv', header = T)
+# data <- prepare_diabetes_data(data)

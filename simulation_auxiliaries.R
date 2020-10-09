@@ -4,19 +4,13 @@
 #
 ################################################################################
 
-# Packages and Libraries
+# Libraries
 
-# install.packages("rlist")
-# install.packages("purrr")
-# library(purrr)
-# library(rlist)
-
-
-# my overall working/project directory: 
-# "C:/Users/ebner/Documents/MasterArbeit/ExpertRuleFit"
+library(purrr)
+library(rlist)
 
 # External functions
-source("./ExpertRuleFit/createX.R", chdir = T)
+source("createX.R")
 
 ################################################################################
 
@@ -53,15 +47,15 @@ sim_data <- function(n_vars, n_obs, mu, sigma){
 #' @param n_lin_preds number of input variables to be sampled, default = 5
 #' @return a vector of strings including the variable names 
 
-sample_lin_preds <- function(X, n_lin_preds){
-  colnumbers <- as.vector(1: ncol(X))
-  lin_preds_numbers <- sample(colnumbers, size = n_lin_preds, replace = FALSE)
-  lin_preds <- c()
-  for (i in 1:length(lin_preds_numbers)){
-    lin_preds[i] <- paste("X[,",lin_preds_numbers[i], "]", sep = "")
-  }
-  lin_preds
-}
+# sample_lin_preds <- function(X, n_lin_preds){
+#  colnumbers <- as.vector(1: ncol(X))
+#  lin_preds_numbers <- sample(colnumbers, size = n_lin_preds, replace = FALSE)
+#  lin_preds <- c()
+#  for (i in 1:length(lin_preds_numbers)){
+#    lin_preds[i] <- paste("X[,",lin_preds_numbers[i], "]", sep = "")
+#  }
+#  lin_preds
+# }
 
 # lin_preds <- sample_lin_preds(X, n_lin_preds)
 # lin_preds
@@ -293,12 +287,12 @@ sample_epsilon <- function(n_obs, mu_epsilon, sigma_epsilon){
 #' @return vector of numeric values as calculated from linear predictor for every observation
 
 
-calc_linear_predictor <- function(X, betas){
+calc_linear_predictor <- function(dt_y, betas){
   linear_predictor = c()
-  for (i in 1:nrow(X)){
+  for (i in 1:nrow(dt_y)){
     help = 0
-    for(j in 1:ncol(X)){
-      help = help + betas[j]*X[i,j]
+    for(j in 1:ncol(dt_y)){
+      help = help + betas[j]*dt_y[i,j]
     }
     linear_predictor[i] = help
   }

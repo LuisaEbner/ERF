@@ -1,7 +1,7 @@
 ################################################################################
 
 #                                                                              #
-#                   Expert RuleFit - Auxiliary Functions                       #
+#                   Expert Rulefit - Auxiliary Functions                       #
 #                                                                              #                                                                              #
 
 ################################################################################
@@ -141,21 +141,11 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                                    type_measure = "class",
                                    nfolds = 10,
                                    s = "lambda.min",
-                                   confirmatory_cols, 
+                                   confirmatory_cols =NULL, 
                                    alpha = 1, print_output = T){
   
   # find best lambda via cross validation
   set.seed(123) 
-  cvfit <- cv.glmnet(X, y, family = "binomial", 
-                              type.measure = type_measure, nfolds = nfolds)
-  if (s == "lambda.min"){
-    lambda <- cvfit$lambda.min
-  } else{
-    lambda <- cvfit$lambda.1se
-  }
-  
-  # min of mean cv error
-  mse.min <- min(cvfit$cvm)
   
   # define penalties according to confirmatory columns
   if(length(confirmatory_cols) == 0){
@@ -166,7 +156,22 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   }
   
   # model fit
-  fit <- cv.glmnet(X, y, family = "binomial", alpha = alpha, penalty.factor = p.fac)
+  #formula <- as.formula(y ~ .)
+  #X_matrix <- model.matrix(formula, X)
+  cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", alpha = alpha, 
+                     type_measure = "class", nfolds = 10, penalty.factor = p.fac)
+  
+  if (s == "lambda.min"){
+    lambda <- cvfit$lambda.min
+  } else{
+    lambda <- cvfit$lambda.1se
+  }
+  
+  #min of mean cv error
+  #mse.min <- min(cvfit$cvm)
+  
+  fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha,
+                penalty.factor = p.fac)
   
   # variable coefficients
   coefs <- coef(fit, s=lambda);
@@ -177,57 +182,43 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   # number of non-zero coefficients
   n_terms = length(coefs[which(coefs != 0 ) ])
   
-  Results <- data.frame(
-    features = coefs@Dimnames[[1]][ which(coefs != 0 ) ], #intercept included
-    coefficients    = coefs       [ which(coefs != 0 ) ]
+  Results <- data.frame( features = coefs@Dimnames[[1]][ which(coefs != 0 ) ], 
+                         coefficients    = coefs       [ which(coefs != 0 ) ]
   )
   
 
   if (is.null(Xtest) == T) {
     if(print_output == T){
-      # if no test data is given, return the model and its parameters
-      # use function regr_output to create comprising model info in console
-      output = regr_output(nfolds = nfolds, s=s, lambda = lambda, 
-                        n_terms = n_terms, mean_cv_error = mse.min,
-                        Results = Results, Xtest = Xtest)
-      out <- list(output, Results = Results,  n_terms = n_terms, lambda =lambda, PenFac = p.fac)
+      output = regr_output(nfolds = nfolds, s=s, lambda = lambda,
+                           n_terms = n_terms, Results = Results)
+      result <- list(output, Results = Results,  n_terms = n_terms,
+                     lambda =lambda, PenFac = p.fac)
     } else {
-      # if no output is desired, store all important model parameters
-      out <- list(Results = Results,  n_terms = n_terms, lambda =lambda, PenFac = p.fac)
+      result <- list(Results = Results,  n_terms = n_terms, lambda =lambda,
+                     PenFac = p.fac)
     }
     
   } else{
-    # predict class probabilities
-    pred_prob <- predict(fit, newx = Xtest, s = lambda, type = "response")
-    # predict binary classes
-    pred_class <- predict(fit, newx = Xtest, s = lambda, type = "class")
-    # confusion matrix
+    pred_prob <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "response")
+    pred_class <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "class")
     conf_mat <- table(pred = pred_class,true = ytest)
-    # AUC
     auc <-  auc(ytest, as.integer(pred_class))
-    # Classification error
     ce <-   ce(ytest, as.integer(pred_class))
     
     if(print_output == T){
-      # return model as console output + store important parameters, 
-      # and predictive measures in list
       output <- regr_output(nfolds = nfolds, s=s, lambda = lambda, 
-                         n_terms = n_terms, mean_cv_error = mse.min, 
+                         n_terms = n_terms,
                          Results = Results, Xtest = Xtest,
                          conf_mat = conf_mat, auc = auc, ce = ce)
-      out <- list(output, Results = Results, n_terms = n_terms, lambda =lambda, 
-                  mcve = mse.min, Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac)
+      result <- list(output, Results = Results, n_terms = n_terms, lambda =lambda, 
+                     Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac)
     } else {
       # store all relevant model information as list
-      out <- list(Results = Results,  n_terms = n_terms, lambda =lambda, 
-                  mcve = mse.min, Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac)
+      result <- list(Results = Results,  n_terms = n_terms, lambda =lambda, 
+                     Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac)
     }
-    
-    
-    
   }
-  
-  out
+  result
 }
 
 ################################################################################
@@ -238,15 +229,12 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
 #' @return print statements
 
 
-regr_output <- function(nfolds, s, lambda, n_terms, mean_cv_error, Results,
+regr_output <- function(nfolds, s, lambda, n_terms, Results,
                         Xtest = NULL, conf_mat = NULL, auc = NULL, ce = NULL){
   cat(sprintf("Final ensemble with CV (k= %d) error with s = %s\n", nfolds, s))
   cat(sprintf("\n"))
   cat(sprintf("Lambda = %f \n", lambda))
   cat(sprintf("Number of terms = %d \n", n_terms))
-  if (s == "lambda.min"){
-    cat(sprintf("Mean cv error = %#.4f \n", mean_cv_error))
-  }
   cat(sprintf("\n"))
   cat(sprintf("Regularized Logistic Regression Model: \n"))
   cat(sprintf("\n"))
@@ -269,7 +257,7 @@ regr_output <- function(nfolds, s, lambda, n_terms, mean_cv_error, Results,
 #' @title expert_occurences
 #' @description calculates the proportion of expert rules that entered the final ERF model
 #' @param expert_rules vector of rule strings, including all of the external expert knowledge in form of rules
-#' @param model_rules vector of strings, including all rules and variables included in the final Expert-RuleFit model (after regularized regression)
+#' @param model_rules vector of strings, including all rules and variables included in the final Expert-Rulefit model (after regularized regression)
 #' @return value between 0 and 1, indicating the proportion of expert rules and expert linear terms that entered the final ERF model
 #'                    
 
@@ -321,7 +309,7 @@ expert_output <- function(expert_rules, removed_expertrules, confirmatory_lins, 
 
 #'@name rf_vs_erf
 #'@description compares ERF models with and without expert knowledge according to predictive accuracy and model complexity
-#'@param see parameters of function 'ExpertRuleFit'
+#'@param see parameters of function 'ExpertRulefit'
 #'@return dataframe = table of results for AUC, CE and number of terms on different models
 
 rf_vs_erf <- function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, name_rules = T,
@@ -332,13 +320,13 @@ rf_vs_erf <- function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, name_rules = T,
                       alpha = 1, nfolds = 10, type.measure = "class",
                       s = "lambda.min", print_output = T){
   
-  rf <- ExpertRuleFit(X = X, y=y, Xtest=Xtest, ytest=ytest, name_rules=name_rules,
+  rf <- ExpertRulefit(X = X, y=y, Xtest=Xtest, ytest=ytest, name_rules=name_rules,
                       name_lins = name_lins, linterms = linterms, 
                       ntree = ntree, ensemble = ensemble, mix=mix, L=L, S=S, 
                       minsup=minsup, intercept=intercept, corelim=corelim, 
                       alpha =alpha, nfolds=nfolds, type.measure = type.measure, s=s, print_output = F)
   
-  erf <- ExpertRuleFit(X = X, y=y, Xtest=Xtest, ytest=ytest, name_rules=name_rules,
+  erf <- ExpertRulefit(X = X, y=y, Xtest=Xtest, ytest=ytest, name_rules=name_rules,
                        expert_rules = expert_rules, confirmatory_rules = confirmatory_rules, 
                        name_lins = name_lins, linterms = linterms, confirmatory_lins = confirmatory_lins, 
                        ntree = ntree, ensemble = ensemble, mix=mix, L=L, S=S, 

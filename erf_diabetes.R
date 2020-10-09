@@ -8,8 +8,6 @@
 
 #=============================== LIBRARIES =====================================
 
- .libPaths("C:/Users/ebner/Documents/R/win-library/4.0")
-
 library(gbm)
 library(inTrees)
 library(randomForest)
@@ -20,6 +18,7 @@ library(glmnet)
 library(coefplot)
 library(purrr)
 library(rlist)
+library(lava)
 library(caret)
 library(mlbench)
 library(Metrics)
@@ -30,10 +29,7 @@ library(readr)
 
 # External functions
 
-setwd("C:/Users/ebner/Documents/MasterArbeit/My_Implementation/Experiments/Diabetes")
 source("erf_diabetes_dataprep.R")
-
-setwd("C:/Users/ebner/Documents/MasterArbeit/My_Implementation/ExpertRuleFit")
 source("erf_main.R")
 
 #===============================================================================
@@ -84,7 +80,6 @@ source("erf_main.R")
 
 
 # DATA 
-setwd("C:/Users/ebner/Documents/MasterArbeit/My_Implementation/Experiments/Diabetes")
 data <- read.csv(file = 'diabetes.csv', header = T)
 data <- prepare_diabetes_data(data)
 
@@ -135,6 +130,8 @@ expert_rules <- c(dk_rules1, dk_rules2)
 
 # Model
 erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
-                              expert_rules = expert_rules,
-                              confirmatory_rules = expert_rules, 
-                              linterms = linterms)
+                              expert_rules = expert_rules, 
+                              confirmatory_rules = dk_rules1,
+                              linterms = linterms, confirmatory_lins = c("Age", "BMI"))
+
+

@@ -8,19 +8,6 @@
 
 #=============================== LIBRARIES =====================================
 
-#.libPaths("C:/Users/ebner/Documents/R/win-library/4.0")
-
-
-#install.packages('gbm')
-#install.packages('inTrees')
-#install.packages('randomForest')
-#install.packages('pROC')
-#install.packages('MASS')
-#install.packages('pre')
-#install.packages('mice')
-#install.packages('DMwR')
-
-
 library(gbm)
 library(inTrees)
 library(randomForest)
@@ -30,11 +17,7 @@ library(mice)
 library(DMwR)
 
 # external functions
-
-setwd("C:/Users/ebner/Documents/MasterArbeit/My_Implementation/Experiments/Cancer")
 source("erf_cancer_dataprep.R")
-
-setwd("C:/Users/ebner/Documents/MasterArbeit/My_Implementation/ExpertRuleFit")
 source("erf_main.R")
 
 #===============================================================================
