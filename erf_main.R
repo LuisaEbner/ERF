@@ -59,7 +59,11 @@ source("create_test.R")
 #' @param alpha The elasticnet mixing parameter, alpha = 1 corresponds to lasso, alpha = 0 to ridge, 0<alpha<1 to elastic net
 #' @param nfolds number of CV folds to find the best lambda
 #' @param type.measure measure according which to optimize lambda; can be either "auc", "class", "mse" or "mae"
-#' @param s: string, either "lambda.min" or "lambda.1se", where "lambda.min" indicates the value of lambda that gives minimum mean cross-validated error, whereas  "lambda.1se": value of lambda which gives the most regularized model such that error is within one standard error of the minimum. 
+#' @param s: string, either "lambda.min" or "lambda.1se", where "lambda.min" indicates the value of lambda that gives minimum mean cross-validated error, whereas  "lambda.1se": value of lambda which gives the most regularized model such that error is within one standard error of the minimum.
+#' @param dfmax:	Limits the maximum number of variables in the model. Useful for very large nvars, if a partial path is desired.
+#' @param pmax:	Limits the maximum number of variables ever to be nonzero
+#' @param standardize Logical flag for X variable standardization, prior to fitting the model sequence. The coefficients are always returned on the original scale.
+
 #' @return An object of class ExpertRuleFit, which is a list of the following components:
 #'   \item{Model}{regularized regression model including as dataframe of model features and its coefficients}
 ##'  \item{Features}{vector of strings including all features = intercept, rules, linear terms}
@@ -83,7 +87,8 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                          ntree=250, ensemble= "GBM", mix=0.5, L=4, S=6, minsup=.025, 
                          intercept=T, corelim = 1, 
                          alpha = 1, nfolds = 10, type.measure = "class",
-                         s = "lambda.min", print_output = T) {
+                         s = "lambda.min", dfmax = 500, pmax = 500, standardize = F, 
+                         print_output = T) {
   
   
   # function input checks
@@ -309,7 +314,9 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                                         nfolds = nfolds,
                                         s = s,
                                         confirmatory_cols = confirmatory_cols,
-                                        alpha = alpha, print_output = print_output)
+                                        alpha = alpha, dfmax =dfmax, pmax = pmax,
+                                        standardize = standardize,
+                                        print_output = print_output)
       
       model_features <- regmodel$Results$features
       prop_ek <- expert_occurences(expert_rules, confirmatory_lins, model_features)
@@ -386,7 +393,9 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                                         nfolds = nfolds,
                                         s = s,
                                         confirmatory_cols = confirmatory_cols,
-                                        alpha = alpha, print_output = print_output)
+                                        alpha = alpha, dfmax =dfmax, pmax = pmax,
+                                        standardize = standardize, 
+                                        print_output = print_output)
       
       model_features <- regmodel$Results$features
       prop_ek <- expert_occurences(expert_rules, confirmatory_lins, model_features)
@@ -432,35 +441,30 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
 # Simulation Example
 
 # Example
-# set.seed(179)
-# simulation <- create_simulation(n_vars = 100, n_obs = 1000,
-#                                mu = 0, sigma = 1, 
-#                                n_rule_vars = 10, 
-#                                n_rel_rules = 10, 
-#                                optional_lengths = c(1, 2, 3, 4),
-#                                weights = c(1/3, 1/4, 1/4, 1/6),
-#                                mu_beta = 0, sigma_beta = 5, 
-#                                mu_epsilon = 0, sigma_epsilon = 0.1)
+set.seed(179)
+simulation <- create_simulation(n_vars = 100, n_obs = 1000,
+                                n_rule_vars = 10, 
+                                n_rel_rules = 20)
 
 
 # Dataset of relevant predictors + y 
-#rel_predictor_data <- simulation[[1]]
+# rel_predictor_data <- simulation[[1]]
 
 
 # Data
-#data <- simulation[[2]]
-#sets <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)
-#X <- sets[[1]]
-#y <- sets[[2]]
-#Xtest <- sets[[3]]
-#ytest <- sets[[4]]
+data <- simulation[[2]]
+sets <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)
+X <- sets[[1]]
+y <- sets[[2]]
+Xtest <- sets[[3]]
+ytest <- sets[[4]]
 
 # Expert knowledge
-#expert_rules <- simulation[[3]]
+expert_rules <- simulation[[3]]
 
 
 # ExpertRuleFit Modell
-#erfmodel <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest, name_rules = F, expert_rules = expert_rules)
+erfmodel <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest, name_rules = F, expert_rules = expert_rules)
 #model <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest)
 
 
@@ -469,7 +473,5 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
 #' TODO:
 #' variable importance, wie viel Prozent der Varianz werden durch Expert-Rules erklaert
 #' mit pre package/ RuleFit by Friedman vergleichen
-#' Zwang zu Einfachen Modellen: max Anzahl Terme in glmnet festlegen, ntrees, depth verkleinern
 #' Anruf Aerzte
-
 
