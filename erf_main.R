@@ -330,7 +330,10 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
         out = c(Train = Xt , Model = regmodel$Results, 
                 Features = regmodel$Results$features, 
                 Coefficients = regmodel$Results$coefficients, 
-                Nterms = regmodel$n_terms, ExpertRules = expert_rules, 
+                Nterms = regmodel$n_terms,
+                AvgRuleLength = regmodel$AvgRuleLength,
+                ImpTerms <- regmodel$ImpTerms,
+                ExpertRules = expert_rules, 
                 ConfTerms = confirmatory_terms,
                 Removed_ExpertRules = removed_expertrules,  PropEK = prop_ek)
       } else{
@@ -338,7 +341,10 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
         out = c(Train = Xt , Model = regmodel$Results, 
                 Features = regmodel$Results$features, 
                 Coefficients = regmodel$Results$coefficients, 
-                Nterms = regmodel$n_terms, ExpertRules = expert_rules, 
+                Nterms = regmodel$n_terms,
+                AvgRuleLength = regmodel$AvgRuleLength,
+                ImpTerms <- regmodel$ImpTerms,
+                ExpertRules = expert_rules, 
                 ConfTerms = confirmatory_terms,
                 Removed_ExpertRules = removed_expertrules,  PropEK = prop_ek)
       }
@@ -409,6 +415,9 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                    Features = regmodel$Results$features, 
                    Coefficients = regmodel$Results$coefficients, 
                    Nterms = regmodel$n_terms,
+                   Predictions = regmodel$Predictions,
+                   AvgRuleLength = regmodel$AvgRuleLength,
+                   ImpTerms <- regmodel$ImpTerms,
                    ConfusionMatrix = regmodel$Conf_Mat, AUC = regmodel$AUC, 
                    ClassErr = regmodel$CE, ExpertRules = expert_rules, 
                    ConfTerms = confirmatory_terms,
@@ -420,6 +429,9 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                    Features = regmodel$Results$features, 
                    Coefficients = regmodel$Results$coefficients, 
                    Nterms = regmodel$n_terms,
+                   Predictions = regmodel$Predictions,
+                   AvgRuleLength = regmodel$AvgRuleLength,
+                   ImpTerms <- regmodel$ImpTerms,
                    ConfusionMatrix = regmodel$Conf_Mat, AUC = regmodel$AUC, 
                    ClassErr = regmodel$CE, ExpertRules = expert_rules, 
                    ConfTerms = confirmatory_terms,
@@ -441,10 +453,10 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
 # Simulation Example
 
 # Example
-set.seed(179)
-simulation <- create_simulation(n_vars = 100, n_obs = 1000,
-                                n_rule_vars = 10, 
-                                n_rel_rules = 20)
+# set.seed(179)
+# simulation <- create_simulation(n_vars = 100, n_obs = 1000,
+#                                n_rule_vars = 10, 
+#                                n_rel_rules = 20)
 
 
 # Dataset of relevant predictors + y 
@@ -452,26 +464,25 @@ simulation <- create_simulation(n_vars = 100, n_obs = 1000,
 
 
 # Data
-data <- simulation[[2]]
-sets <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)
-X <- sets[[1]]
-y <- sets[[2]]
-Xtest <- sets[[3]]
-ytest <- sets[[4]]
+# data <- simulation[[2]]
+# sets <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)
+# X <- sets[[1]]
+# y <- sets[[2]]
+# Xtest <- sets[[3]]
+# ytest <- sets[[4]]
 
 # Expert knowledge
-expert_rules <- simulation[[3]]
+# expert_rules <- simulation[[3]]
 
 
 # ExpertRuleFit Modell
-erfmodel <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest, name_rules = F, expert_rules = expert_rules)
-#model <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest)
+# erfmodel <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest, name_rules = F, expert_rules = expert_rules)
+# model <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' TODO:
 #' variable importance, wie viel Prozent der Varianz werden durch Expert-Rules erklaert
-#' mit pre package/ RuleFit by Friedman vergleichen
 #' Anruf Aerzte
 

@@ -120,7 +120,7 @@ prepare_cervicalcancer_data <- function(data, del_maj_missing = F,
                      "Hormonal.Contraceptives", "Hormonal.Contraceptives..years.",
                      "IUD", "IUD..years.")
     imputed = mice(data[, cols.impute], method = imp_method, print =  FALSE)
-    data[,cols.impute] <- complete(imputed)
+    data[,cols.impute] <- mice::complete(imputed)
   }
   
   # define the target

@@ -6,6 +6,9 @@
 
 ################################################################################
 
+# Library 
+library(caret)
+
 #' @name create_X_y_Xtest_ytest
 #' @description takes a dataset including a binary target column and turns it into training and test data for X and y, separately. Converts y to make it applicable to glmnet. When train_frac = 1, no test data is created.
 #' @param data: dataframe object including predictors and binary target
@@ -133,6 +136,7 @@ names_to_numbers <- function(X, variable_names){
 #' @param dfmax:	Limits the maximum number of variables in the model. Useful for very large nvars, if a partial path is desired.
 #' @param pmax:	Limits the maximum number of variables ever to be nonzero
 #' @param standardize Logical flag for X variable standardization, prior to fitting the model sequence. The coefficients are always returned on the original scale.
+#' @param n number of most important terms to select, default = 10
 #' @param print_output logical value, indicating whether a model output should be printed
 #' @return if print_output == T: console output including: nfolds, s, lambda, number of terms in the final model, 
 #' mean_cv_error, the final model as a dataframe of variable names and coefficients, Xtest, a confusion matrix, the AUC and the Classification error
@@ -147,6 +151,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                                    confirmatory_cols =NULL, 
                                    alpha = 1,
                                    pmax, dfmax, standardize, 
+                                   n = 10,
                                    print_output = T){
   
   # find best lambda via cross validation
@@ -193,21 +198,30 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                          coefficients    = coefs       [ which(coefs != 0 ) ]
   )
   
+  # Average Rule length
+  avgrl <- average_rule_length(Results$features)
+  
+  # Variable Importance
+  important_terms <- imp_terms(Results, n)
 
   if (is.null(Xtest) == T) {
     if(print_output == T){
       output = regr_output(nfolds = nfolds, s=s, lambda = lambda,
-                           n_terms = n_terms, Results = Results)
+                           n_terms = n_terms, Results = Results, avgrulelength = avgrl,
+                           important_terms = important_terms)
       result <- list(output, Results = Results,  n_terms = n_terms,
-                     lambda =lambda, PenFac = p.fac)
+                     lambda =lambda, PenFac = p.fac, 
+                     AvgRuleLength = avgrl, ImpTerms = important_terms)
     } else {
       result <- list(Results = Results,  n_terms = n_terms, lambda =lambda,
-                     PenFac = p.fac)
+                     PenFac = p.fac, AvgRuleLength = avgrl,
+                     ImpTerms = important_terms)
     }
     
   } else{
     pred_prob <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "response")
     pred_class <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "class")
+    predictions <- as.numeric(pred_class)
     conf_mat <- table(pred = pred_class,true = ytest)
     auc <-  auc(ytest, as.integer(pred_class))
     ce <-   ce(ytest, as.integer(pred_class))
@@ -215,14 +229,18 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
     if(print_output == T){
       output <- regr_output(nfolds = nfolds, s=s, lambda = lambda, 
                          n_terms = n_terms,
-                         Results = Results, Xtest = Xtest,
+                         Results = Results, avgrulelength = avgrl, 
+                         important_terms = important_terms, Xtest = Xtest,
                          conf_mat = conf_mat, auc = auc, ce = ce)
       result <- list(output, Results = Results, n_terms = n_terms, lambda =lambda, 
-                     Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac)
+                     Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac,
+                     Predictions = predictions, AvgRuleLength = avgrl,
+                     ImpTerms = important_terms)
     } else {
-      # store all relevant model information as list
       result <- list(Results = Results,  n_terms = n_terms, lambda =lambda, 
-                     Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac)
+                     Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac, 
+                     Predictions = predictions, AvgRuleLength = avgrl,
+                     ImpTerms = important_terms)
     }
   }
   result
@@ -236,16 +254,22 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
 #' @return print statements
 
 
-regr_output <- function(nfolds, s, lambda, n_terms, Results,
+regr_output <- function(nfolds, s, lambda, n_terms, Results, avgrulelength, 
+                        important_terms, 
                         Xtest = NULL, conf_mat = NULL, auc = NULL, ce = NULL){
   cat(sprintf("Final ensemble with CV (k= %d) error with s = %s\n", nfolds, s))
   cat(sprintf("\n"))
   cat(sprintf("Lambda = %f \n", lambda))
   cat(sprintf("Number of terms = %d \n", n_terms))
+  cat(sprintf("Average rule length = %#.4f \n", avgrulelength))
   cat(sprintf("\n"))
   cat(sprintf("Regularized Logistic Regression Model: \n"))
   cat(sprintf("\n"))
   print(Results)
+  cat(sprintf("\n"))
+  cat(sprintf(" Most important Features (acc. to coefs):\n"))
+  cat(sprintf("\n"))
+  print(important_terms)
   cat(sprintf("\n"))
   if (is.null(Xtest) == F){
     cat(sprintf("Confusion matrix: \n"))
@@ -311,6 +335,43 @@ expert_output <- function(expert_rules, removed_expertrules, confirmatory_lins, 
   
 } 
 
+
+################################################################################
+
+#' @name avgrl
+#' @description calculates the average rule lengths of the rules in the final model
+#' @param rules rule strings = features of the final model
+#' @return numeric value indicating the average rule length of rules in the final model
+
+library(stringr)
+
+average_rule_length <- function(rules){
+  rule_lengths <- c()
+  for(i in 1:length(rules)){
+    rule_lengths[i] <- str_count(rules[i], "&") + 1
+  }
+  avg_length <- mean(rule_lengths)
+  avg_length
+}
+
+
+################################################################################
+
+#' @name imp_terms
+#' @description selects the n model terms with the greatest model coefficients
+#' @param model output of ExpertRuleFit$Model
+#' @param n integer indicting number of terms to select
+#' @return string vector indicating most important terms
+
+imp_terms <- function(model, n){
+  largest_coefs <- sort(model[,2], decreasing = T)[1:n]
+  largest_pos <- c()
+  for(i in 1: length(largest_coefs)){
+    largest_pos[i] <- which(model[,2] == largest_coefs[i])
+  }
+  imp_terms <- model[,1][largest_pos]
+  imp_terms
+}
 
 ################################################################################
 

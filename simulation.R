@@ -124,25 +124,25 @@ create_simulation <- function(n_vars = 100, n_obs = 2000,
 #===============================================================================
 
 # Example
-simulation <- create_simulation(n_vars = 40, n_obs = 2000,
-                                 mu = 0, sigma = 1, 
-                                 n_rule_vars = 15, 
-                                 n_rel_rules = 10, 
-                                 optional_lengths = c(1, 2, 3, 4),
-                                 weights = c(1/3, 1/4, 1/4, 1/6),
-                                 mu_beta = 0, sigma_beta = 5, 
-                                 mu_epsilon = 0, sigma_epsilon = 0.1)
+# simulation <- create_simulation(n_vars = 40, n_obs = 2000,
+#                                 mu = 0, sigma = 1, 
+#                                 n_rule_vars = 15, 
+#                                 n_rel_rules = 10, 
+#                                 optional_lengths = c(1, 2, 3, 4),
+#                                 weights = c(1/3, 1/4, 1/4, 1/6),
+#                                 mu_beta = 0, sigma_beta = 5, 
+#                                 mu_epsilon = 0, sigma_epsilon = 0.1)
 
 
 # Dataset of relevant predictors + y 
-rel_predictor_data <- simulation[[1]]
+# rel_predictor_data <- simulation[[1]]
 
 
 # Data to apply Expert-RuleFit to
-data <- simulation[[2]]
+# data <- simulation[[2]]
 
 # Expert knowledge
-expert_rules <- simulation[[3]]
-expert_rules
+# expert_rules <- simulation[[3]]
+# expert_rules
 
 

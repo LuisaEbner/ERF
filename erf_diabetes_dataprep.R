@@ -7,8 +7,7 @@
 ################################################################################
 
 # DATA PREPARATION FUNCTION
-
-# library(mice)
+library(mice)
 
 #' @name prepare_diabetes_data
 #' @description Preparation (Cleaning, Feature Engineering, Missing Value Imputation, Resampling) of the UCI dataset Pima Indians Diabetes.
@@ -42,8 +41,8 @@ prepare_diabetes_data <- function(data, imp_method = "rf"){
   
   
   # (2)
-  mice_imp <- mice(data[, c("SkinThickness","Insulin")], method= imp_method, print = F) 
-  mice_complete <- complete(mice_imp)
+  mice_imp <- mice(data[, c("SkinThickness","Insulin")], method=imp_method, print = F) 
+  mice_complete <- mice::complete(mice_imp)
   data$SkinThickness <- mice_complete$SkinThickness
   data$Insulin <- mice_complete$Insulin
 
@@ -52,6 +51,5 @@ prepare_diabetes_data <- function(data, imp_method = "rf"){
 
 
 # EXAMPLE
-# setwd('C:/Users/ebner/Documents/MasterArbeit/Daten/Diabetes')
-# data <- read.csv(file = 'diabetes.csv', header = T)
-# data <- prepare_diabetes_data(data)
+data <- read.csv(file = 'diabetes.csv', header = T)
+data <- prepare_diabetes_data(data)
