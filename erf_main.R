@@ -63,7 +63,7 @@ source("create_test.R")
 #' @param dfmax:	Limits the maximum number of variables in the model. Useful for very large nvars, if a partial path is desired.
 #' @param pmax:	Limits the maximum number of variables ever to be nonzero
 #' @param standardize Logical flag for X variable standardization, prior to fitting the model sequence. The coefficients are always returned on the original scale.
-
+#' @param n_imp number of most important terms/features to be selected and printed in model output, default = 5
 #' @return An object of class ExpertRuleFit, which is a list of the following components:
 #'   \item{Model}{regularized regression model including as dataframe of model features and its coefficients}
 ##'  \item{Features}{vector of strings including all features = intercept, rules, linear terms}
@@ -87,7 +87,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                          ntree=250, ensemble= "GBM", mix=0.5, L=4, S=6, minsup=.025, 
                          intercept=T, corelim = 1, 
                          alpha = 1, nfolds = 10, type.measure = "class",
-                         s = "lambda.min", dfmax = 500, pmax = 500, standardize = T, 
+                         s = "lambda.min", dfmax = 500, pmax = 500, standardize = T, n_imp = 5,
                          print_output = T) {
   
   
@@ -315,7 +315,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                                         s = s,
                                         confirmatory_cols = confirmatory_cols,
                                         alpha = alpha, dfmax =dfmax, pmax = pmax,
-                                        standardize = standardize,
+                                        standardize = standardize, n = n_imp,
                                         print_output = print_output)
       
       model_features <- regmodel$Results$features
@@ -404,7 +404,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                                         s = s,
                                         confirmatory_cols = confirmatory_cols,
                                         alpha = alpha, dfmax =dfmax, pmax = pmax,
-                                        standardize = standardize, 
+                                        standardize = standardize, n = n_imp,
                                         print_output = print_output)
       
       model_features <- regmodel$Results$features

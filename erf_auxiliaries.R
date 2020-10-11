@@ -151,7 +151,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                                    confirmatory_cols =NULL, 
                                    alpha = 1,
                                    pmax, dfmax, standardize, 
-                                   n = 10,
+                                   n = 5,
                                    print_output = T){
   
   # find best lambda via cross validation

@@ -123,6 +123,7 @@ erf_diab_c <- ExpertRuleFit(X_diab, y_diab, Xtest_diab, ytest_diab, name_rules =
                            confirmatory_lins = linterms_diab,
                            print_output = T)
 
+
 # 2. Model Complexity
 erf_diab$Nterms #nterms
 erf_diab_c$Nterms 

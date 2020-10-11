@@ -54,6 +54,13 @@ source("erf_main.R")
 
 ################################################################################
 
+#' @name modelcomp
+#' @description compares measures of model complexity, predictive accuracy, and expert knowledge usage across different ERF specifications and the PRE model
+#' @param data initial, full dataset
+#' @param train_frac fraction of training data in train-test-split
+#' @param see all other params describe in function ExpertRuleFit
+#' @return table of measures for comparison
+
 modelcomp <- function(data, train_frac = 0.7, name_rules = T, expert_rules, name_lins = T, 
                       linterms = NULL, type = "both"){
   
@@ -129,9 +136,28 @@ modelcomp <- function(data, train_frac = 0.7, name_rules = T, expert_rules, name
   colnames(comp_table) = c("ERF w.o. ExpKnow", "ERF, ExpKnow optional", 
                            "ERF, ExpKnow confirmatory", "PRE")
   
+  comp_imps <- data.frame(ERF_no <- rf$ImpTerms,
+                          ERF_opt <- erf_opt$ImpTerms,
+                          ERF_conf <- erf_conf$ImpTerms,
+                          PRE_no <- pre_impterms)
+  #rownames(comp_imps) = "Most important terms"
+  colnames(comp_imps) = c("ERF w.o. ExpKnow", "ERF, ExpKnow optional", 
+                           "ERF, ExpKnow confirmatory", "PRE")
+  
   print(comp_table)
+  #print(comp_imps)
+  
+  out <- list(ModelMeasures = comp_table, ImportantTerms = comp_imps)
+  out
 }
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+frac_equal_predictions <- function(model1, model2){
+  
+}
+
+  
 ################################################################################
 
 # Example 1: Diabetes
@@ -157,6 +183,9 @@ linterms_diab <- c("Age", "BMI", "Glucose", "Insulin")
 comp_diab <- modelcomp(data_diab, expert_rules = expert_rules_diab, 
                        linterms = linterms_diab)
 
+comp_diab$ModelMeasures
+comp_diab$ImportantTerms
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Example 2: Simulation
@@ -175,6 +204,9 @@ expert_rules_sim <- simulation[[3]]
 
 comp_sim <- modelcomp(data_sim, name_rules = F, expert_rules = expert_rules_sim, 
                       type = "rules")
+
+comp_sim$ModelMeasures
+comp_sim$ImportantTerms
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -213,5 +245,8 @@ linterms_cancer <- c("Number.of.sexual.partners", "Age", "Num.of.pregnancies",
 
 comp_cancer <- modelcomp(data_cancer, expert_rules = expert_rules_cancer, 
                        linterms = linterms_cancer)
+
+comp_cancer$ModelMeasures
+comp_cancer$ImportantTerms
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
