@@ -39,14 +39,6 @@ library(mice)
 #              s = "lambda.min", dfmax = 500, pmax = 500, standardize = F, 
 #              print_output = T) {
 
-# b) XRF
-
-
-# xrf(object, data, family = "binomial", 
-#     xgb_control = list(nrounds = 250, max_depth = 3),
-#     glm_control = list(type.measure = "auc", nfolds = 10), sparse = TRUE,
-#     prefit_xgb = NULL, deoverlap = FALSE, ...)
-
 
 
 # c) PRE
@@ -106,7 +98,6 @@ expert_rules_cancer <- c("First.sexual.intercourse<18",
 # variables
 linterms_cancer <- c("Number.of.sexual.partners", "Age", "Num.of.pregnancies", 
                    "First.sexual.intercourse", "Hormonal.Contraceptives..years.")
-
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

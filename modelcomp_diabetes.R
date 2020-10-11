@@ -39,15 +39,6 @@ library(mice)
 #              s = "lambda.min", dfmax = 500, pmax = 500, standardize = F, 
 #              print_output = T) {
 
-# b) XRF
-
-
-# xrf(object, data, family = "binomial", 
-#     xgb_control = list(nrounds = 250, max_depth = 3),
-#     glm_control = list(type.measure = "auc", nfolds = 10), sparse = TRUE,
-#     prefit_xgb = NULL, deoverlap = FALSE, ...)
-
-
 
 # c) PRE
 
@@ -67,6 +58,7 @@ library(mice)
 source("erf_main.R")
 source("erf_diabetes_dataprep.R")
 
+set.seed(12456)
 # data
 data_diab <- read.csv(file = 'diabetes.csv', header = T)
 data_diab <- prepare_diabetes_data(data_diab)
@@ -121,7 +113,7 @@ rf_diab$ImpTerms
 # 1.1 Model (with optional expert knowledge)
 erf_diab <- ExpertRuleFit(X_diab, y_diab, Xtest_diab, ytest_diab, name_rules = T,
                          expert_rules = expert_rules_diab, name_lins = T,
-                         linterms = colnames(X_diab), print_output = T)
+                         linterms = colnames(X_diab), print_output = F)
 
 # 1.2 Model (with confirmatory expert knowledge)
 erf_diab_c <- ExpertRuleFit(X_diab, y_diab, Xtest_diab, ytest_diab, name_rules = T,
@@ -155,19 +147,24 @@ erf_diab_c$ImpTerms
 
 # 1. Model
 pre_diab <- pre(y_diab ~ ., data = train_data_diab, family = "binomial", 
-                type = "rules", ntrees = 250)
+                type = "both", ntrees = 250)
 
+pre_diab
 # 2. Model Complexity
-pre_diab_rel_coefs <- coef(pre_diab)$coefficient[coef(pre_diab)$coefficient != 0] # (non-zero) Coefficients
+pre_diab_coefs <- coef(pre_diab)
+pre_diab_rel_coefs <- pre_diab_coefs$coefficient[pre_diab_coefs$coefficient != 0] # (non-zero) Coefficients
 pre_diab_nterms <- length(pre_diab_rel_coefs) #nterms
-
+pre_diab_nterms
 pre_diab_rules <- pre_diab_coefs$description[1:pre_diab_nterms]
 pre_diab_avgrulelength <- average_rule_length(pre_diab_rules) # average rule lengths
-
+pre_diab_avgrulelength 
 # 3. Predictive Accuracy
 pre_diab_preds <- predict(pre_diab, newdata = test_data_diab, type = "class")
 pre_diab_auc <-  auc(ytest_diab, as.integer(pre_diab_preds)) #AUC
+pre_diab_auc
 pre_diab_ce <-   ce(ytest_diab, as.integer(pre_diab_preds)) # Classification Error
+pre_diab_ce
 
 # 4. Most important features 
 pre_diab_impterms <- pre_diab_rules[1:10] 
+pre_diab_impterms

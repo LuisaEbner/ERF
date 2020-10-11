@@ -87,7 +87,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                          ntree=250, ensemble= "GBM", mix=0.5, L=4, S=6, minsup=.025, 
                          intercept=T, corelim = 1, 
                          alpha = 1, nfolds = 10, type.measure = "class",
-                         s = "lambda.min", dfmax = 500, pmax = 500, standardize = F, 
+                         s = "lambda.min", dfmax = 500, pmax = 500, standardize = T, 
                          print_output = T) {
   
   
@@ -319,7 +319,9 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                                         print_output = print_output)
       
       model_features <- regmodel$Results$features
+      imp_features <- regmodel$ImpTerms
       prop_ek <- expert_occurences(expert_rules, confirmatory_lins, model_features)
+      prop_ek_imp <- expert_occurences(expert_rules, confirmatory_lins, imp_features)
       
       
       if(print_output == T){
@@ -335,7 +337,8 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                 ImpTerms <- regmodel$ImpTerms,
                 ExpertRules = expert_rules, 
                 ConfTerms = confirmatory_terms,
-                Removed_ExpertRules = removed_expertrules,  PropEK = prop_ek)
+                Removed_ExpertRules = removed_expertrules,  PropEK = prop_ek, 
+                PropEKImp = prop_ek_imp)
       } else{
         
         out = c(Train = Xt , Model = regmodel$Results, 
@@ -343,10 +346,11 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                 Coefficients = regmodel$Results$coefficients, 
                 Nterms = regmodel$n_terms,
                 AvgRuleLength = regmodel$AvgRuleLength,
-                ImpTerms <- regmodel$ImpTerms,
+                ImpTerms = regmodel$ImpTerms,
                 ExpertRules = expert_rules, 
                 ConfTerms = confirmatory_terms,
-                Removed_ExpertRules = removed_expertrules,  PropEK = prop_ek)
+                Removed_ExpertRules = removed_expertrules,  PropEK = prop_ek,
+                PropEKImp = prop_ek_imp)
       }
       
       class(out) = "ExpertRulemodel"
@@ -404,8 +408,9 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                                         print_output = print_output)
       
       model_features <- regmodel$Results$features
+      imp_features <- regmodel$ImpTerms
       prop_ek <- expert_occurences(expert_rules, confirmatory_lins, model_features)
-      
+      prop_ek_imp <- expert_occurences(expert_rules, confirmatory_lins, imp_features)
       
       if(print_output == T){
         exp_info <- expert_output(expert_rules, removed_expertrules, confirmatory_lins, prop_ek)
@@ -417,12 +422,12 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                    Nterms = regmodel$n_terms,
                    Predictions = regmodel$Predictions,
                    AvgRuleLength = regmodel$AvgRuleLength,
-                   ImpTerms <- regmodel$ImpTerms,
+                   ImpTerms = regmodel$ImpTerms,
                    ConfusionMatrix = regmodel$Conf_Mat, AUC = regmodel$AUC, 
                    ClassErr = regmodel$CE, ExpertRules = expert_rules, 
                    ConfTerms = confirmatory_terms,
                    RemovedExpertRules = removed_expertrules,
-                   PropEK = prop_ek)
+                   PropEK = prop_ek, PropEKImp = prop_ek_imp)
       } else{
         
         out = list(Train = Xt, Test = X_test, Model = regmodel$Results, 
@@ -431,12 +436,12 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                    Nterms = regmodel$n_terms,
                    Predictions = regmodel$Predictions,
                    AvgRuleLength = regmodel$AvgRuleLength,
-                   ImpTerms <- regmodel$ImpTerms,
+                   ImpTerms = regmodel$ImpTerms,
                    ConfusionMatrix = regmodel$Conf_Mat, AUC = regmodel$AUC, 
                    ClassErr = regmodel$CE, ExpertRules = expert_rules, 
                    ConfTerms = confirmatory_terms,
                    RemovedExpertRules = removed_expertrules,
-                   PropEK = prop_ek)
+                   PropEK = prop_ek, PropEKImp = prop_ek_imp)
         
       }
       

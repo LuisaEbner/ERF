@@ -44,8 +44,8 @@ fix_columns = function(X,cols) {
 
 # DATA PREPARATION
 
-# library(mice)
-# library(DMwR)
+library(mice)
+library(DMwR)
 
 
 #' @name prepare_cervicalcancer_data
