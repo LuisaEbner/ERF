@@ -192,7 +192,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   # non-zero coefficient feature names
   coefs@Dimnames[[1]][which(coefs != 0 ) ]  
   # number of non-zero coefficients
-  n_terms = length(coefs[which(coefs != 0 ) ])
+  n_terms = length(coefs[which(coefs != 0 ) ] - 1)
   
   Results <- data.frame( features = coefs@Dimnames[[1]][ which(coefs != 0 ) ], 
                          coefficients    = coefs       [ which(coefs != 0 ) ]
@@ -338,7 +338,7 @@ expert_output <- function(expert_rules, removed_expertrules, confirmatory_lins, 
 
 ################################################################################
 
-#' @name avgrl
+#' @name avergage_rule_length
 #' @description calculates the average rule lengths of the rules in the final model
 #' @param rules rule strings = features of the final model
 #' @return numeric value indicating the average rule length of rules in the final model
