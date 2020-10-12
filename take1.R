@@ -1,3 +1,5 @@
+# auxiliary function used in ExpertRuleFit
+
 take1 = function(len) {
   draw = c()
   for(i in 1:(len/2)){

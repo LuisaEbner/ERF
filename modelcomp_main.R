@@ -61,7 +61,8 @@ source("erf_main.R")
 #' @param see all other params describe in function ExpertRuleFit
 #' @return table of measures for comparison
 
-modelcomp <- function(data, train_frac = 0.7, name_rules = T, expert_rules, name_lins = T, 
+modelcomp <- function(data, train_frac = 0.7, name_rules = T, expert_rules,
+                      name_lins = T, 
                       linterms = NULL, type = "both"){
   
   # train-test-split for ERF
@@ -76,7 +77,7 @@ modelcomp <- function(data, train_frac = 0.7, name_rules = T, expert_rules, name
   test <- cbind.data.frame(Xtest, ytest)
   
   # 1. ERF without expert knowledge
-  rf <- ExpertRuleFit(X, y, Xtest, ytest, print_output = F)
+  rf <- ExpertRuleFit(X, y, Xtest, ytest, name_rules = name_rules, print_output = F)
   
   # 2. ERF with optional expert knowledge
   erf_opt <- ExpertRuleFit(X, y, Xtest, ytest, name_rules = name_rules,
@@ -105,22 +106,7 @@ modelcomp <- function(data, train_frac = 0.7, name_rules = T, expert_rules, name
   pre_ce <-   ce(ytest, as.integer(pre_preds)) # Classification Error
   pre_impterms <- pre_rules[1:10] # important terms
   
-  # 5. PRE with confirmatory terms
-  #pre_conf <- pre(y ~ ., data = train, family = "binomial", type = type, 
-  #               ntrees = 250, confirmatory = expert_rules)
-  
-  # model measures
-  #pre_conf_coefs <- coef(pre_conf)
-  #pre_conf_rel_coefs <- pre_conf_coefs$coefficient[pre_conf_coefs$coefficient != 0] 
-  #pre_conf_nterms <- length(pre_conf_rel_coefs) #nterms
-  #pre_conf_rules <- pre_conf_coefs$description[1:pre_conf_nterms]
-  #pre_conf_avgrl <- average_rule_length(pre_conf_rules) # average rule lengths
-  #pre_conf_preds <- predict(pre_conf, newdata = test, type = "class")
-  #pre_conf_auc <-  auc(ytest, as.integer(pre_conf_preds)) #AUC
-  #pre_conf_ce <-   ce(ytest, as.integer(pre_conf_preds)) # Classification Error
-  #pre_conf_impterms <- pre_conf_rules[1:10] # important terms
-  
-  
+  # Model Measures
   comp_table <- data.frame(ERF_no <- c(rf$Nterms, rf$AvgRuleLength, rf$AUC,
                                        rf$ClassErr, NA, NA),
                            ERF_opt <- c(erf_opt$Nterms, erf_opt$AvgRuleLength,
@@ -136,28 +122,21 @@ modelcomp <- function(data, train_frac = 0.7, name_rules = T, expert_rules, name
   colnames(comp_table) = c("ERF w.o. ExpKnow", "ERF, ExpKnow optional", 
                            "ERF, ExpKnow confirmatory", "PRE")
   
-  comp_imps <- data.frame(ERF_no <- rf$ImpTerms,
-                          ERF_opt <- erf_opt$ImpTerms,
-                          ERF_conf <- erf_conf$ImpTerms,
-                          PRE_no <- pre_impterms)
-  #rownames(comp_imps) = "Most important terms"
-  colnames(comp_imps) = c("ERF w.o. ExpKnow", "ERF, ExpKnow optional", 
-                           "ERF, ExpKnow confirmatory", "PRE")
+  # Important Terms
+  comp_imps <- list(ERF_no_ExpKnow = rf$ImpTerms,
+                          ERF_opt_ExpKnow = erf_opt$ImpTerms,
+                          ERF_conf_ExpKnow = erf_conf$ImpTerms,
+                          PRE_no_ExpKnow = pre_impterms)
   
-  print(comp_table)
+  
+  #print(comp_table)
   #print(comp_imps)
   
   out <- list(ModelMeasures = comp_table, ImportantTerms = comp_imps)
   out
 }
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-frac_equal_predictions <- function(model1, model2){
-  
-}
-
-  
 ################################################################################
 
 # Example 1: Diabetes
@@ -175,7 +154,7 @@ expert_rules_diab <- c("Glucose>=80 & Glucose<=135",
                        "BloodPressure>=100 & BloodPressure<=107",
                        "BloodPressure>107",
                        "BMI>=19 & BMI<=24", "BMI>=24 & BMI<=26", "BMI>26",
-                       "BMI>=25", "BloodPressure>=107", "Age>=45",
+                       "BMI>=25", "Age>=45",
                        "Glucose>=144 & Glucose<=199")
 # variables
 linterms_diab <- c("Age", "BMI", "Glucose", "Insulin")
@@ -193,9 +172,9 @@ comp_diab$ImportantTerms
 source("simulation.R")
 set.seed(179)
 
-simulation <- create_simulation(n_vars = 200, n_obs = 600,
+simulation <- create_simulation(n_vars = 200, n_obs = 700,
                                 n_rule_vars = 5, 
-                                n_rel_rules = 10, mu_epsilon = 0.1)
+                                n_rel_rules = 10, mu_epsilon = 0.05)
 # data
 data_sim <- simulation[[2]]
 
@@ -247,6 +226,6 @@ comp_cancer <- modelcomp(data_cancer, expert_rules = expert_rules_cancer,
                        linterms = linterms_cancer)
 
 comp_cancer$ModelMeasures
-comp_cancer$ImportantTerms
+comp_cancer$ImportantTerms$PRE_no_ExpKnow
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

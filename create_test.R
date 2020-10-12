@@ -1,3 +1,5 @@
+# auxiliary function used in main function ExpertRuleFit
+
 createXtest = function(X, rules) {
   Xr = matrix(0, nrow=dim(X)[1], ncol=length(rules))
   for (i in 1:length(rules)){

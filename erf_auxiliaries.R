@@ -1,13 +1,17 @@
 ################################################################################
-
+################################################################################
 #                                                                              #
-#                   Expert Rulefit - Auxiliary Functions                       #
+#                   ExpertRulefit - Auxiliary Functions                        #
 #                                                                              #                                                                              #
-
+################################################################################
 ################################################################################
 
 # Library 
 library(caret)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Functions
 
 #' @name create_X_y_Xtest_ytest
 #' @description takes a dataset including a binary target column and turns it into training and test data for X and y, separately. Converts y to make it applicable to glmnet. When train_frac = 1, no test data is created.
@@ -17,7 +21,8 @@ library(caret)
 #' @return list object, including X, Xtest, y, ytest
 
 
-create_X_y_Xtest_ytest <- function(data, train_frac, pos_class = 1, target_name = NULL, type_missing = NULL){
+create_X_y_Xtest_ytest <- function(data, train_frac, pos_class = 1,
+                                   target_name = NULL, type_missing = NULL){
   
   # rename the target column
   if (is.null(target_name) == F){
@@ -53,8 +58,7 @@ create_X_y_Xtest_ytest <- function(data, train_frac, pos_class = 1, target_name 
   
 }
 
-
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #'@name names_to_positions
 #'@description replaces the name of a variable in an expert rule with its position to become readable for the function createX
@@ -96,7 +100,7 @@ names_to_positions <- function(X, name_rules){
   pos_rules
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #'@name positions_to_names
 #'@description replaces the position of a variable (X[,xy]) in an expert rule with its original variable name to become readable for the human user
@@ -140,8 +144,7 @@ positions_to_names <- function(X, pos_rules){
 }
 
 
-
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #'@name names_to_numbers
 #'@description replaces the name of a variable in a number indicating its column position 
@@ -164,8 +167,7 @@ names_to_numbers <- function(X, variable_names){
   as.numeric(num_variables)
 }
 
-################################################################################
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @name regularized_regression
 #' @description performs regularized regression as described in stage 2 of the ERF model
@@ -266,7 +268,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   result
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @title regr_output
 #' @description  prints all relevant glmnet model information as received from the function 'regularized_regression'
@@ -275,7 +277,8 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
 
 
 regr_output <- function(X, Xtest, name_rules, regmodel){
-  cat(sprintf("Final ensemble with CV (k= %d) error with s = %s\n", regmodel$nfolds, regmodel$s))
+  cat(sprintf("Final ensemble with CV (k= %d) error with s = %s\n", 
+              regmodel$nfolds, regmodel$s))
   cat(sprintf("\n"))
   cat(sprintf("Lambda = %f \n", regmodel$lambda))
   cat(sprintf("Number of terms = %d \n", regmodel$n_terms))
@@ -306,8 +309,7 @@ regr_output <- function(X, Xtest, name_rules, regmodel){
   }
 }
 
-################################################################################
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @title expert_occurences
 #' @description calculates the proportion of expert rules that entered the final ERF model
@@ -334,8 +336,7 @@ expert_occurences <- function(expert_rules, confirmatory_lins, model_features){
   }
 }
 
-################################################################################
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @title expert_output
 #' @description  prints the expert rules and the proportion of expert knowledge that entered the final ERF model 
@@ -343,38 +344,52 @@ expert_occurences <- function(expert_rules, confirmatory_lins, model_features){
 #' @param prop_ek proportion of expert rules and variables that entered the final ERF model
 #' @return print statements
 
-expert_output <- function(X, name_rules, name_lins, expert_rules, 
+expert_output <- function(X, name_rules = T, name_lins = T, expert_rules,
                           removed_expertrules,
                           confirmatory_lins, prop_ek){
   cat(sprintf("All Expert Rules: \n"))
   cat(sprintf("\n"))
-  if(name_rules == T){
-    print(positions_to_names(X, expert_rules))
-  } else{
-    print(expert_rules)
+  if (!(is.null(expert_rules))){
+    if(name_rules == T){
+      print(positions_to_names(X, expert_rules))
+    } else{
+      print(expert_rules)
+    }
+  } else {
+    print("None.")
   }
+  
   cat(sprintf("\n"))
   cat(sprintf("Expert Rules removed due to low support or correlation withother rules in the model: \n"))
   cat(sprintf("\n"))
-  if(name_rules == T){
-  print(positions_to_names(X, removed_expertrules))
-  }else{
-    print(removed_expertrules)
+  if(!(is.null(removed_expertrules))){
+    if(name_rules == T){
+      print(positions_to_names(X, removed_expertrules))
+    }else{
+      print(removed_expertrules)
+    }
+  } else {
+    print("None.")
   }
+  
   cat(sprintf("\n"))
   cat(sprintf("Expert Linear terms: \n"))
-  if(name_lins == T){
-    print(positions_to_names(X, confirmatory_lins))
-  } else{
-    print(confirmatory_lins)
+  if(!(is.null(confirmatory_lins))){
+    if(name_lins == T){
+      print(positions_to_names(X, confirmatory_lins))
+    } else{
+      print(confirmatory_lins)
+    }
+  } else {
+    print("None.")
   }
+
   cat(sprintf("\n"))
   cat(sprintf("Proportion of expert knowledge in the final model:  %#.4f \n", prop_ek))
   
 } 
 
-
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @name avergage_rule_length
 #' @description calculates the average rule lengths of the rules in the final model
@@ -392,8 +407,7 @@ average_rule_length <- function(rules){
   avg_length
 }
 
-
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @name imp_terms
 #' @description selects the n model terms with the greatest model coefficients
@@ -411,7 +425,10 @@ imp_terms <- function(model, n){
   imp_terms
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#' @name translate_out
+#' @description used at the end of the main function ExpertRuleFit to convert X[,xy] into the original variable names of the dataset X
 
 translate_out <- function(X, expert_rules, removed_expertrules, 
                           confirmatory_terms, out){
@@ -431,3 +448,6 @@ translate_out <- function(X, expert_rules, removed_expertrules,
   }
   out
 }
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+

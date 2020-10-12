@@ -24,9 +24,16 @@ library(ROCit)
 library(ROCR)
 library(mice)
 
-################################################################################
+# external functions
+source("erf_main.R")
+source("simulation.R")
 
-# RULEFIT IMPLEMENTATION OPTIONS
+# seed
+set.seed(179)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                       RULEFIT IMPLEMENTATION OPTIONS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # a) ExpertRuleFit
 
@@ -39,16 +46,10 @@ library(mice)
 #              s = "lambda.min", dfmax = 500, pmax = 500, standardize = F, 
 #              print_output = T) {
 
-# b) XRF
 
+# b) PRE
 
-#xrf(object, data, family = "binomial", xgb_control = list(nrounds = 250, max_depth = 3),
-#  glm_control = list(type.measure = "auc", nfolds = 10), sparse = TRUE,
-#  prefit_xgb = NULL, deoverlap = FALSE, ...)
-
-
-
-# c) PRE
+# see: https://github.com/marjoleinF/pre
 
 #pre(formula, data, family = "binomial", use.grad = TRUE,
 #    tree.unbiased = TRUE, type = "both", sampfrac = 0.5, maxdepth = 3L,
@@ -59,62 +60,68 @@ library(mice)
 #    par.final = FALSE, ...)
 
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                            SIMULATION DATA
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Comparisons for simulated Data
-
-# 1. Simulated Data
-source("simulation.R")
-source("erf_main.R")
-
-set.seed(179)
 simulation <- create_simulation(n_vars = 100, n_obs = 1000,
-                                n_rule_vars = 10, 
-                                n_rel_rules = 20)
+                                n_rule_vars = 20, 
+                                n_rel_rules = 10)
 data_sim <- simulation[[2]]
+
+# train-test-split for ERF
 sets_sim <- create_X_y_Xtest_ytest(data_sim, 0.7, pos_class = 1)
-# data for ERF
 X_sim <- sets_sim[[1]]
 y_sim <- sets_sim[[2]]
 Xtest_sim <- sets_sim[[3]]
 ytest_sim <- sets_sim[[4]]
-# data for XRF and PRE
+
+# train-test-split for XRF and PRE
 train_data_sim <- cbind.data.frame(X_sim, y_sim)
 test_data_sim <- cbind.data.frame(cbind(Xtest_sim, ytest_sim))
-# expert knowledge
+
+# expert knowledge (rules only)
 expert_rules_sim <- simulation[[3]]
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                                 MODELS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# a) ExpertRuleFit (w.o. expert knowledge)
+# a) ExpertRuleFit 
 
-# Model
-rf_sim <- ExpertRuleFit(X_sim, y_sim, Xtest_sim, ytest_sim, print_output = T)
+# Model w.o. expert knowledge
+rf_sim <- ExpertRuleFit(X_sim, y_sim, Xtest_sim, ytest_sim, name_rules = F, print_output = T)
 
 # Model Complexity
-
-# nterms
-rf_sim$Nterms
-# average rule length
-rf_sim$AvgRuleLength
+rf_sim$Nterms # nterms
+rf_sim$AvgRuleLength # average rule length
 
 # Predictive Accuray 
+rf_sim$AUC # AUC
+rf_sim$ClassErr # Classification Error
 
-# AUC
-rf_sim$AUC
-# Classification Error
-rf_sim$ClassErr
-
-# Most important variables 
+# Most important features
 rf_sim$ImpTerms
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# b) ExpertRuleFit 
-
 # Model (with optional expert knowledge)
 erf_sim <- ExpertRuleFit(X_sim, y_sim, Xtest_sim, ytest_sim, name_rules = F,
                          expert_rules = expert_rules_sim, print_output = T)
+
+
+# Model Complexity
+erf_sim$Nterms # nterms
+erf_sim$AvgRuleLength # average rule length
+
+# Predictive Accuray 
+erf_sim$AUC # AUC
+erf_sim$ClassErr # Classification Error
+
+# Most important features 
+erf_sim$ImpTerms
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Model (with confirmatory expert knowledge)
 erf_sim_c <- ExpertRuleFit(X_sim, y_sim, Xtest_sim, ytest_sim, name_rules = F,
@@ -122,25 +129,19 @@ erf_sim_c <- ExpertRuleFit(X_sim, y_sim, Xtest_sim, ytest_sim, name_rules = F,
                          confirmatory_rules = expert_rules_sim, 
                          print_output = T)
 # Model Complexity
-
-# nterms
-erf_sim$Nterms
-# average rule length
-erf_sim$AvgRuleLength
+erf_sim_c$Nterms # nterms
+erf_sim_c$AvgRuleLength # average rule length
 
 # Predictive Accuray 
+erf_sim_c$AUC # AUC
+erf_sim_c$ClassErr # Classification Error
 
-# AUC
-erf_sim$AUC
-# Classification Error
-erf_sim$ClassErr
-
-# Most important variables 
-erf_sim$ImpTerms
+# Most important features
+erf_sim_c$ImpTerms
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# b) pre
+# b) PRE
 
 # Model
 pre_sim <- pre(y_sim ~ ., data = train_data_sim, family = "binomial", type = "rules", 
@@ -148,50 +149,24 @@ pre_sim <- pre(y_sim ~ ., data = train_data_sim, family = "binomial", type = "ru
 pre_sim
 
 # Model Complexity
-# (non-zero) Coefficients
 pre_sim_coefs <- coef(pre_sim)
-pre_sim_rel_coefs <- pre_sim_coefs$coefficient[pre_sim_coefs$coefficient != 0]
-pre_sim_rel_coefs
-# a) nterms
-pre_sim_nterms <- length(pre_sim_rel_coefs)
-pre_sim_nterms
-# b) rule lengths
+pre_sim_rel_coefs <- pre_sim_coefs$coefficient[pre_sim_coefs$coefficient != 0] #(non-zero) Coefficients
+
+pre_sim_nterms <- length(pre_sim_rel_coefs)-1 # nterms
+
 pre_sim_rules <- pre_sim_coefs$description[1:pre_sim_nterms]
-pre_sim_avgrulelength <- average_rule_length(pre_sim_rules)
-pre_sim_avgrulelength
+pre_sim_avgrulelength <- average_rule_length(pre_sim_rules) #average rule length
 
 # Predictive Accuracy
 pre_sim_preds <- predict(pre_sim, newdata = test_data_sim, type = "class")
 pre_sim_actual <- ytest_sim
-
-# AUC
-auc <-  auc(ytest_sim, as.integer(pre_sim_preds))
-auc
-# Classification Error
-ce <-   ce(ytest_sim, as.integer(pre_sim_preds))
-ce
-# cross validated prediction error
-sim.cv <- cvpre(pre_sim)
-sim.cv$accuracy
+auc <-  auc(ytest_sim, as.integer(pre_sim_preds)) # AUC
+ce <-   ce(ytest_sim, as.integer(pre_sim_preds)) # Classification Error
 
 # Most important features 
 pre_sim_impterms <- pre_sim_rules[1:10]
 pre_sim_impterms
 
 
-################################################################################
-#                              COMPARISONS                                     #
-################################################################################
-
-# 1. Predictions (percentage of equal predictions)
-# 2. ClassErr, AUC, Sens, Spez
-# 3. nterms
-# 4. average rule length
-# 5. Most important variables
-# 6. Most important terms
-
-################################################################################
-
-
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

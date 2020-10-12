@@ -6,7 +6,13 @@
 ################################################################################
 ################################################################################
 
-# AUXILIARY FUNCTIONS
+# Libraries
+library(mice)
+library(DMwR)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Functions
 
 #' @name find_cols
 #' @description identifies all columns with missing values encoded as "?"
@@ -23,7 +29,7 @@ find_cols = function(X){
   return(cols)
 }
 
-#*******************************************************************************
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @name fix_columns
 #' @description replaces "?" by -1
@@ -40,13 +46,7 @@ fix_columns = function(X,cols) {
   return(X)
 }
 
-###############################################################################
-
-# DATA PREPARATION
-
-library(mice)
-library(DMwR)
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @name prepare_cervicalcancer_data
 #' @description Preparation (Cleaning, Feature Engineering, Missing Value Imputation, Resampling) of the UCI dataset Cervical Cancer (Risk Factors) 
@@ -63,7 +63,8 @@ library(DMwR)
 prepare_cervicalcancer_data <- function(data, del_maj_missing = F,  
                                         add_NA_features = F, impute_missing = F,
                                         imp_method = "pmm",
-                                        target = "Biopsy", balance = F, perc_over = 400,
+                                        target = "Biopsy", balance = F,
+                                        perc_over = 400,
                                         perc_under = 200){
   
   # identify colums with "?" indicating missing values and change them to -1
@@ -106,16 +107,19 @@ prepare_cervicalcancer_data <- function(data, del_maj_missing = F,
     data$partners_unknown = factor(data$partners_unknown, levels=c("0","1"))
     
     data$intercourse_unknown <- as.numeric(data$First.sexual.intercourse == -1)
-    data$intercourse_unknown = factor(data$intercourse_unknown, levels=c("0","1"))
+    data$intercourse_unknown = factor(data$intercourse_unknown,
+                                      levels=c("0","1"))
     
     data$pregnancies_unknown <- as.numeric(data$Num.of.pregnancies == -1)
-    data$pregnancies_unknown = factor(data$pregnancies_unknown, levels=c("0","1"))
+    data$pregnancies_unknown = factor(data$pregnancies_unknown, 
+                                      levels=c("0","1"))
   }
   
   # impute missing values with multiple imputation
   if(impute_missing == T){
     data[data == -1] <- NA
-    cols.impute <- c("Number.of.sexual.partners", "Num.of.pregnancies", "First.sexual.intercourse",
+    cols.impute <- c("Number.of.sexual.partners", "Num.of.pregnancies",
+                     "First.sexual.intercourse",
                      "Smokes", "Smokes..years.", "Smokes..packs.year.",
                      "Hormonal.Contraceptives", "Hormonal.Contraceptives..years.",
                      "IUD", "IUD..years.")
@@ -150,9 +154,10 @@ prepare_cervicalcancer_data <- function(data, del_maj_missing = F,
     print("Invalid target choice.")
   }
   
-  # balance the[which(data == "?)]
+  # balance the data
   if(balance == T){
-    balanced <- SMOTE(Class ~ ., data, perc.over = perc_over, perc.under = perc_under)
+    balanced <- SMOTE(Class ~ ., data, perc.over = perc_over, 
+                      perc.under = perc_under)
     balanced[cols.int] <-  round(balanced[cols.int], digits = 0)
     balanced[cols.int] <-  sapply(balanced[cols.int], as.integer)
     data <- balanced
@@ -161,8 +166,9 @@ prepare_cervicalcancer_data <- function(data, del_maj_missing = F,
   return(data)
 }
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Example
-# setwd('C:/Users/ebner/Documents/MasterArbeit/Daten/Cervical cancer/csv')
 # data <- read.csv(file = 'risk_factors_cervical_cancer.csv', header = T)
 # data <- prepare_cervicalcancer_data(data = data, del_maj_missing = F,
 #                                     add_NA_features = F, impute_missing = F,

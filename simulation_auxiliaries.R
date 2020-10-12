@@ -5,7 +5,6 @@
 ################################################################################
 
 # Libraries
-
 library(purrr)
 library(rlist)
 
@@ -14,7 +13,7 @@ source("createX.R")
 
 ################################################################################
 
-# Auxiliary functions
+# Functions
 
 # 1. Generate input data
 
@@ -37,32 +36,9 @@ sim_data <- function(n_vars, n_obs, mu, sigma){
 
 # X <- sim_data(n_vars, n_obs, mu, sigma)
 
-#===============================================================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# 2. Define relevant linear terms
-
-#' @name sample_lin_preds
-#' @description Samples input variables and defines them as relevant linear predictors
-#' @param X X, a dataframe of random variable values with n_vars columns and n_obs rows
-#' @param n_lin_preds number of input variables to be sampled, default = 5
-#' @return a vector of strings including the variable names 
-
-# sample_lin_preds <- function(X, n_lin_preds){
-#  colnumbers <- as.vector(1: ncol(X))
-#  lin_preds_numbers <- sample(colnumbers, size = n_lin_preds, replace = FALSE)
-#  lin_preds <- c()
-#  for (i in 1:length(lin_preds_numbers)){
-#    lin_preds[i] <- paste("X[,",lin_preds_numbers[i], "]", sep = "")
-#  }
-#  lin_preds
-# }
-
-# lin_preds <- sample_lin_preds(X, n_lin_preds)
-# lin_preds
-
-#===============================================================================
-
-# 3. Define relevant rules
+# 2. Define rules as relevant predictors
 
 #' @name sample_rule_vars 
 #' @description Samples input variables and defines them as the components of relevant predictor rules
@@ -86,7 +62,7 @@ sample_rule_vars <- function(X, n_rule_vars){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @name sample_rule_lengths
-#' @description Samples rule lengths ( = number of variables to be included in one rule)
+#' @description samples rule lengths ( = number of variables to be included in one rule)
 #' @param n_rel_rules number of relevant rules (integer)
 #' @param optional_lengths vector ranging from 1 to the max. complexity of relevant predictor rules, default = c(1, 2, 3, 4)
 #' @param weights weight vector of same length as 'optional lengths', defining the sampling probability of certain rule lengths, default = c(1/3, 1/4, 1/4, 1/6)
@@ -229,19 +205,16 @@ define_rules <- function(n_rel_rules, rule_lengths, conditions){
 # rule_preds <- define_rules(n_rel_rules, rule_lengths, conditions)
 # rule_preds
 
-# all_predictors <- unlist(c(rule_preds, lin_preds))
-# all_predictors
-
 #===============================================================================
 
-# 4. create X as relevant to the outcome variable
+# 3. create X as relevant to the outcome variable
 
 # dt <- createX(X, rule_preds, t = 0.025)
 # dt[1]
 
 #===============================================================================
 
-# 5. create model 
+# 4. create model 
 
 #' @name sample_betas
 #' @description Samples beta coefficient values (in easiest case, all betas are +1)
@@ -255,7 +228,7 @@ sample_betas <- function(all_predictors, mu_beta, sigma_beta){
   betas
 }
 
-# betas <- sample_betas(all_predictors, mu_beta, sigma_beta)
+# betas <- sample_betas(rule_preds, mu_beta, sigma_beta)
 # betas
 
 #===============================================================================
@@ -278,7 +251,7 @@ sample_epsilon <- function(n_obs, mu_epsilon, sigma_epsilon){
 
 #===============================================================================
 
-# 8. Define y
+# 5. Define y
 
 #' @name calc_linear_predictor
 #' @descriptions  calculates the linear predictor per observation
@@ -331,7 +304,7 @@ sample_y <- function(y1_prob){
 # dt_y = cbind(dt_y, y1_prob, y)
 
 #===============================================================================
-# 9. Create simulation dataset
+# 6. Create simulation dataset
 
 # data <- cbind(X, y)
 

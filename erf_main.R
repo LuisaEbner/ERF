@@ -87,7 +87,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                          ntree=250, ensemble= "GBM", mix=0.5, L=4, S=6, minsup=.025, 
                          intercept=T, corelim = 1, 
                          alpha = 1, nfolds = 10, type.measure = "class",
-                         s = "lambda.min", dfmax = 500, pmax = 500, standardize = T, n_imp = 5,
+                         s = "lambda.min", dfmax = 500, pmax = 500, standardize = T, n_imp = 10,
                          print_output = T) {
   
   
@@ -233,7 +233,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
     }
     removed_expertrules
   } else{
-    removed_expertrules <- 0
+    removed_expertrules <- NULL
   }
   
   # standardize linear terms 

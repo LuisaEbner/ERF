@@ -6,8 +6,12 @@
 ################################################################################
 ################################################################################
 
-# DATA PREPARATION FUNCTION
+# Libraries
 library(mice)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Function 
 
 #' @name prepare_diabetes_data
 #' @description Preparation (Cleaning, Feature Engineering, Missing Value Imputation, Resampling) of the UCI dataset Pima Indians Diabetes.
@@ -49,7 +53,8 @@ prepare_diabetes_data <- function(data, imp_method = "rf"){
   return(data)
 }
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # EXAMPLE
-data <- read.csv(file = 'diabetes.csv', header = T)
-data <- prepare_diabetes_data(data)
+# data <- read.csv(file = 'diabetes.csv', header = T)
+# data <- prepare_diabetes_data(data)

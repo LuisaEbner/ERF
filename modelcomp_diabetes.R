@@ -24,9 +24,16 @@ library(ROCit)
 library(ROCR)
 library(mice)
 
-################################################################################
+# external functions
+source("erf_main.R")
+source("erf_diabetes_dataprep.R")
 
-# RULEFIT IMPLEMENTATION OPTIONS
+# seed
+set.seed(12456)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                       RULEFIT IMPLEMENTATION OPTIONS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # a) ExpertRuleFit
 
@@ -40,7 +47,9 @@ library(mice)
 #              print_output = T) {
 
 
-# c) PRE
+# b) PRE
+
+# see: https://github.com/marjoleinF/pre
 
 #pre(formula, data, family = "binomial", use.grad = TRUE,
 #    tree.unbiased = TRUE, type = "both", sampfrac = 0.5, maxdepth = 3L,
@@ -51,14 +60,11 @@ library(mice)
 #    par.final = FALSE, ...)
 
 
-################################################################################
 
-# 2. Diabetes Data
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                              DIABETES DATA
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-source("erf_main.R")
-source("erf_diabetes_dataprep.R")
-
-set.seed(12456)
 # data
 data_diab <- read.csv(file = 'diabetes.csv', header = T)
 data_diab <- prepare_diabetes_data(data_diab)
@@ -168,3 +174,5 @@ pre_diab_ce
 # 4. Most important features 
 pre_diab_impterms <- pre_diab_rules[1:10] 
 pre_diab_impterms
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

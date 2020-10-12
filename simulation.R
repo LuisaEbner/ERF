@@ -4,14 +4,17 @@
 #
 ################################################################################
 
-# Librariess
+# Libraries
 library(pre)
 library(purrr)
 library(rlist)
 
 # source external functions
-
 source('simulation_auxiliaries.R')
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Function
 
 #' @name create_simulation
 #' @description creates a data set including expert knowledge to apply the Expert-RuleFit model to
@@ -44,78 +47,71 @@ create_simulation <- function(n_vars = 100, n_obs = 2000,
   # 1. Generate input variables x_1,...,x_nvars, 
   #    each with n_obs values sampled from N(mu,sigma)
   X <- sim_data(n_vars, n_obs, mu, sigma)
-  # print(X)
   
   # 2. Define the Rules
   # 2.1. Sample input variables and define them as relevant rule components
   rule_vars <- sample_rule_vars(X, n_rule_vars)
-  # print(rule_vars)
+
   
   # 2.2 Sample rule lengths using optional rule lenghts incl. weights
   rule_lengths <- sample_rule_lengths(n_rel_rules, optional_lengths,
                                       weights)
-  # print(rule_lengths)
+
   
   # 2.3. Sample input variables per rule
   var_list_rules <- sample_vars_per_rule(n_rel_rules, rule_vars, rule_lengths)
-  # print(var_list_rules)
+
   
   # 2.4. Sample inequality signs per rule
   sign_list_rules <- sample_signs_per_rule(n_rel_rules, rule_lengths)
-  # print(sign_list_rules)
+
   
   # 2.5. Define condition values per rule, each as a random sample
   #      from N(mu,sigma)
   value_list_rules <- sample_values_per_rule(n_rel_rules, 
                                              rule_lengths, mu, sigma)
-  # print(value_list_rules)
+
   
   # 2.6. Concatenate the variables, signs and values as condition strings
   conditions <- define_conditions(n_rel_rules, rule_lengths,
                                   var_list_rules, sign_list_rules,
                                   value_list_rules)
   
-  # print(conditions)
+
   
   # 3. Define all relevant predictors (rules + linear terms)
   rule_preds <- define_rules(n_rel_rules, rule_lengths, conditions)
-  # print(rule_preds)
+
   
-  # 5. createX as relevant to the outcome variable
+  # 4. createX as relevant to the outcome variable
   dt <- createX(X, rule_preds, t = 0.025)
-  # print(dt)
+
   
-  ## 6. Sample the betas 
+  # 5. Sample the betas 
   betas <- sample_betas(rule_preds, mu_beta, sigma_beta)
   # print(betas)
   
-  # 7. Sample random noise 
+  # 6. Sample random noise 
   epsilon <- sample_epsilon(n_obs, mu_epsilon, sigma_epsilon)
   # print(epsilon)
   
-  # 8. Calculate the outcome probabilities while adding random noise
+  # 7. Calculate the outcome probabilities while adding random noise
   dt_y <- as.data.frame(dt[1])
-  # print(dt_y)
-
   linear_predictor <- calc_linear_predictor(dt_y, betas)
-  # print(linear_predictor)
-  
   y1_prob <- round(1/(1 + exp(-(linear_predictor))),3)
-  # print(y1_prob)
 
-  # Sample binary class outcome from Bernoulli distirbution with prob = y1_prob
+  # 8. Sample binary class outcome from Bernoulli distirbution with prob = y1_prob
   y <- sample_y(y1_prob)
   
-  # Define dataset with all relevant predictor variables, y1_prob and y
+  # 9. Define dataset with all relevant predictor variables, y1_prob and y
   sim_relevant_data = cbind(dt_y, y1_prob, y)
   sim_relevant_data$y <- factor(sim_relevant_data$y)
 
-  # Define full dataset inkl. y
+  # 10. Define full dataset inkl. y
   sim_full_data <- cbind(X, y)
   sim_full_data$y <- factor(sim_full_data$y)
   expert_rules <- rule_preds
     
-  #out <- list(X, dt_y, betas)
   out = list(sim_relevant_data, sim_full_data, expert_rules)
   
   out

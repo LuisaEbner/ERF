@@ -6,7 +6,7 @@
 ################################################################################
 ################################################################################
 
-#=============================== LIBRARIES =====================================
+# Libraries
 
 library(gbm)
 library(inTrees)
@@ -20,16 +20,16 @@ library(DMwR)
 source("erf_cancer_dataprep.R")
 source("erf_main.R")
 
-#===============================================================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # 1. Knowledge Sources
 # 1.1. Training Data
 # 1.2. Factual Domain Knowledge from Clinical Practice Guidelines
 # 1.3. Heuristic Expert Knowledge
 
-#===============================================================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                             TRAINING DATA
-#===============================================================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # The dataset 'Cervical Cancer (Risk Factors)' was collected at the
 # 'Hospital Universitario de Caracas' in Caracas, Venezuela and comprises
@@ -47,9 +47,9 @@ data <- prepare_cervicalcancer_data(data = data, del_maj_missing = T,
 
 
 
-#===============================================================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                           FACTUAL DOMAIN KNOWLEDGE
-#===============================================================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # 1.2.1. Rules extracted from Leitlinienprogramm Onkologie        
 
@@ -76,7 +76,8 @@ dk_rules1 <- c("STDs.HPV==1",
                 "Hormonal.Contraceptives==1 & Hormonal.Contraceptives..years.>=10",
                 "Num.of.pregnancies>1")
 
-#*******************************************************************************
+
+
 # 1.2.2. Rules Extracted from American Cancer Society Guidelines
 
 # 1. Sexual history
@@ -98,35 +99,37 @@ dk_rules2 <- c("First.sexual.intercourse<18",
                 "IUD==0"
                 )
 
-#===============================================================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                         HEURISTIC EXPERT KNOWLEDGE
-#===============================================================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ek_rules1 <- c()
 
-#===============================================================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                           EXPERT-RULEFIT MODEL
-#===============================================================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Function Input
+
+# train-test-split
 sets <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)
 X <- sets[[1]]
 y <- sets[[2]]
 Xtest <- sets[[3]]
 ytest <- sets[[4]]
 
-expert_rules <- c(dk_rules1, dk_rules2)
-
-
+# expert knowledge
+expert_rules <- c(dk_rules1, dk_rules2) # rules
 linterms <- c("Number.of.sexual.partners", "Age", "Num.of.pregnancies", 
-         "First.sexual.intercourse", "Hormonal.Contraceptives..years.")
+         "First.sexual.intercourse", "Hormonal.Contraceptives..years.") # variables
 
-# Model
+# ERF Model
 erf_cancer <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                             expert_rules = expert_rules, 
                             linterms = linterms, confirmatory_lins = linterms)
 
 
-erf_cancer
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 
