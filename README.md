@@ -1,10 +1,11 @@
 # The ExpertRuleFit model (ERF) 
 
-This repository includes the implementation of the ExpertRuleFit Model as proposed in the Master Thesis "Complementing Prediction Rule Ensembles with Expert Knowledge". The model is based on the RuleFit model by Friedman and Popesco 
-(see: http://statweb.stanford.edu/~jhf/ftp/RuleFit.pdf)
+This repository includes the implementation of the ExpertRuleFit Model as proposed in the Master Thesis "Complementing Prediction Rule Ensembles with Expert Knowledge". The model is based on the RuleFit model by Friedman and Popescu 
+(http://statweb.stanford.edu/~jhf/ftp/RuleFit.pdf)
 
 **File Description:**
 
+The following 6 files are auxiliary files used to implement the ExpertRuleFit model:
  * take1.R
  * createX.R
  * create_test.R
@@ -12,8 +13,6 @@ This repository includes the implementation of the ExpertRuleFit Model as propos
  * genrulesgbm.R
  * erf_auxiliaries.R
 
-
-The following 6 files are auxiliary files used to implement the ExpertRuleFit model.
 The main file for model implementation is *erf_main.R*
 
 In the Experiments section of the thesis, we are using 3 different data sources:
@@ -30,7 +29,7 @@ Experiments with the **Simulated data** may be found in:
 
 * erf_simulation.R
 * modelcomp_simulation.R
-* modelcomp_main.R
+* modelcomp_main.R.
 
 The **Diabetes data** is stored as *diabetes.csv* and was loaded from the UCI Machine Learning Repository.
 The dataset was preprocessed to be applicable to the ExpertRuleFit model in the file *erf_diabetes_dataprep.R*.
@@ -52,5 +51,5 @@ Experiments with the cancer data may be found in:
 
 
 The file *modelcomp_main.R* contains a function with which the ERF model without expert knowledge, with optional expert knowledge and with confirmatory expert knowledge are compared according to the number or terms, the average rule length, the AUC and Classification Error and the usage of Expert knowledge in the final model and among its most important features.
-Additionally, all ERF model results are compared to the corresponding PRE model, a RuleFit implementation by Maroleijn Fokkema (see: https://github.com/marjoleinF/pre).
+Additionally, all ERF model results are compared to the corresponding PRE model, a RuleFit implementation by Maroleijn Fokkema ( https://github.com/marjoleinF/pre).
 
