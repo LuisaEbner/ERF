@@ -75,8 +75,8 @@ names_to_positions <- function(X, name_rules){
   pos_rules <- c()
   for (j in 1:length(name_rules)){
     for (k in 1:length(names)){
-      if(grepl(names[k],name_rules[j])){
-        pos_rules[j] <- gsub(names[k], positions[k], name_rules[j])
+      if(grepl(names[k],name_rules[j], fixed = T)){
+        pos_rules[j] <- gsub(names[k], positions[k], name_rules[j], fixed = T)
       }
     }
   }
@@ -86,15 +86,60 @@ names_to_positions <- function(X, name_rules){
     bool <- F
     for (j in 1:length(pos_rules)){
       for (k in 1:length(names)){
-        if(grepl(names[k],pos_rules[j])){
+        if(grepl(names[k],pos_rules[j], fixed = T)){
           bool <- T
-          pos_rules[j] <- gsub(names[k], positions[k], pos_rules[j])
+          pos_rules[j] <- gsub(names[k], positions[k], pos_rules[j], fixed = T)
         }
       }
     }
   }
   pos_rules
 }
+
+################################################################################
+
+#'@name positions_to_names
+#'@description replaces the position of a variable (X[,xy]) in an expert rule with its original variable name to become readable for the human user
+#'@param X data frame of input variables
+#'@param pos_rules vector of strings, containing expert rules with variable names as (X[,xy])
+#'@return the same vector as pos_rules, just with the original variable names instead of positions
+
+
+positions_to_names <- function(X, pos_rules){
+  names <- colnames(X)
+  positions <- c()
+  for (i in 1:ncol(X)){
+    positions[i] <- paste("X[,",i, "]", sep = "")
+  }
+  
+  bool <- T
+  iteration <- 0
+  
+  name_rules <- c()
+  for (j in 1:length(pos_rules)){
+    for (k in 1:length(positions)){
+      if(grepl(positions[k],pos_rules[j], fixed = T)){
+        name_rules[j] <- gsub(positions[k], names[k], pos_rules[j], fixed = T)
+      }
+    }
+  }
+  
+  
+  while(bool){
+    bool <- F
+    for (j in 1:length(name_rules)){
+      for (k in 1:length(positions)){
+        if(grepl(positions[k],name_rules[j], fixed = T)){
+          bool <- T
+          name_rules[j] <- gsub(positions[k], names[k], name_rules[j], fixed = T)
+        }
+      }
+    }
+  }
+  name_rules
+}
+
+
 
 ################################################################################
 
@@ -112,7 +157,7 @@ names_to_numbers <- function(X, variable_names){
   for (j in 1:length(variable_names)){
     for (k in 1:length(names)){
       if(names[k] == variable_names[j]){
-        num_variables[j] <- gsub(names[k], positions[k], variable_names[j])
+        num_variables[j] <- gsub(names[k], positions[k], variable_names[j], fixed = T)
       }
     }
   }
@@ -145,6 +190,7 @@ names_to_numbers <- function(X, variable_names){
 
 
 regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
+                                   name_rules = T,
                                    type_measure = "class",
                                    nfolds = 10,
                                    s = "lambda.min",
@@ -154,9 +200,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                                    n = 5,
                                    print_output = T){
   
-  # find best lambda via cross validation
   set.seed(123) 
-  
   # define penalties according to confirmatory columns
   if(length(confirmatory_cols) == 0){
     p.fac = rep(1, ncol(X))
@@ -165,9 +209,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
     p.fac[confirmatory_cols] <- 0
   }
   
-  # model fit
-  #formula <- as.formula(y ~ .)
-  #X_matrix <- model.matrix(formula, X)
+  # # find best lambda via cross validation
   cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", alpha = alpha, 
                      type_measure = "class", nfolds = 10, pmax = pmax, 
                      dfmax = dfmax, standardize = standardize, 
@@ -178,9 +220,6 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   } else{
     lambda <- cvfit$lambda.1se
   }
-  
-  #min of mean cv error
-  #mse.min <- min(cvfit$cvm)
   
   fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha, pmax = pmax, 
                 dfmax = dfmax, standardize = standardize, penalty.factor = p.fac)
@@ -198,6 +237,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                          coefficients    = coefs       [ which(coefs != 0 ) ]
   )
   
+  
   # Average Rule length
   avgrl <- average_rule_length(Results$features)
   
@@ -205,18 +245,9 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   important_terms <- imp_terms(Results, n)
 
   if (is.null(Xtest) == T) {
-    if(print_output == T){
-      output = regr_output(nfolds = nfolds, s=s, lambda = lambda,
-                           n_terms = n_terms, Results = Results, avgrulelength = avgrl,
-                           important_terms = important_terms)
-      result <- list(output, Results = Results,  n_terms = n_terms,
-                     lambda =lambda, PenFac = p.fac, 
-                     AvgRuleLength = avgrl, ImpTerms = important_terms)
-    } else {
-      result <- list(Results = Results,  n_terms = n_terms, lambda =lambda,
-                     PenFac = p.fac, AvgRuleLength = avgrl,
-                     ImpTerms = important_terms)
-    }
+    result <- list(Results = Results, nfolds = nfolds, s = s, n_terms = n_terms,
+                   lambda =lambda, PenFac = p.fac, AvgRuleLength = avgrl, 
+                   ImpTerms = important_terms)
     
   } else{
     pred_prob <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "response")
@@ -226,23 +257,12 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
     auc <-  auc(ytest, as.integer(pred_class))
     ce <-   ce(ytest, as.integer(pred_class))
     
-    if(print_output == T){
-      output <- regr_output(nfolds = nfolds, s=s, lambda = lambda, 
-                         n_terms = n_terms,
-                         Results = Results, avgrulelength = avgrl, 
-                         important_terms = important_terms, Xtest = Xtest,
-                         conf_mat = conf_mat, auc = auc, ce = ce)
-      result <- list(output, Results = Results, n_terms = n_terms, lambda =lambda, 
-                     Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac,
-                     Predictions = predictions, AvgRuleLength = avgrl,
-                     ImpTerms = important_terms)
-    } else {
-      result <- list(Results = Results,  n_terms = n_terms, lambda =lambda, 
-                     Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac, 
-                     Predictions = predictions, AvgRuleLength = avgrl,
-                     ImpTerms = important_terms)
+    result <- list(Results = Results, nfolds = nfolds, s = s,
+                   n_terms = n_terms, lambda =lambda, 
+                   Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac,
+                   Predictions = predictions, AvgRuleLength = avgrl,
+                   ImpTerms = important_terms)
     }
-  }
   result
 }
 
@@ -254,30 +274,34 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
 #' @return print statements
 
 
-regr_output <- function(nfolds, s, lambda, n_terms, Results, avgrulelength, 
-                        important_terms, 
-                        Xtest = NULL, conf_mat = NULL, auc = NULL, ce = NULL){
-  cat(sprintf("Final ensemble with CV (k= %d) error with s = %s\n", nfolds, s))
+regr_output <- function(X, Xtest, name_rules, regmodel){
+  cat(sprintf("Final ensemble with CV (k= %d) error with s = %s\n", regmodel$nfolds, regmodel$s))
   cat(sprintf("\n"))
-  cat(sprintf("Lambda = %f \n", lambda))
-  cat(sprintf("Number of terms = %d \n", n_terms))
-  cat(sprintf("Average rule length = %#.4f \n", avgrulelength))
+  cat(sprintf("Lambda = %f \n", regmodel$lambda))
+  cat(sprintf("Number of terms = %d \n", regmodel$n_terms))
+  cat(sprintf("Average rule length = %#.4f \n", regmodel$AvgRuleLength))
   cat(sprintf("\n"))
   cat(sprintf("Regularized Logistic Regression Model: \n"))
   cat(sprintf("\n"))
-  print(Results)
+  if(name_rules == T){
+    regmodel$Results$features <- positions_to_names(X, regmodel$Results$features)
+  } 
+  print(regmodel$Results)
   cat(sprintf("\n"))
   cat(sprintf(" Most important Features (acc. to coefs):\n"))
   cat(sprintf("\n"))
-  print(important_terms)
+  if(name_rules == T){
+    regmodel$ImpTerms <- positions_to_names(X, regmodel$ImpTerms)
+  }
+  print(regmodel$ImpTerms)
   cat(sprintf("\n"))
   if (is.null(Xtest) == F){
     cat(sprintf("Confusion matrix: \n"))
     cat(sprintf("\n"))
-    print(conf_mat)
+    print(regmodel$Conf_Mat)
     cat(sprintf("\n"))
-    cat(sprintf("AUC = %#.4f \n\n", auc))
-    cat(sprintf("Classification error = %#.4f \n", ce))
+    cat(sprintf("AUC = %#.4f \n\n", regmodel$AUC))
+    cat(sprintf("Classification error = %#.4f \n", regmodel$CE))
     cat(sprintf("\n"))
   }
 }
@@ -319,19 +343,33 @@ expert_occurences <- function(expert_rules, confirmatory_lins, model_features){
 #' @param prop_ek proportion of expert rules and variables that entered the final ERF model
 #' @return print statements
 
-expert_output <- function(expert_rules, removed_expertrules, confirmatory_lins, prop_ek){
+expert_output <- function(X, name_rules, name_lins, expert_rules, 
+                          removed_expertrules,
+                          confirmatory_lins, prop_ek){
   cat(sprintf("All Expert Rules: \n"))
   cat(sprintf("\n"))
-  print(expert_rules)
+  if(name_rules == T){
+    print(positions_to_names(X, expert_rules))
+  } else{
+    print(expert_rules)
+  }
   cat(sprintf("\n"))
   cat(sprintf("Expert Rules removed due to low support or correlation withother rules in the model: \n"))
   cat(sprintf("\n"))
-  print(removed_expertrules)
+  if(name_rules == T){
+  print(positions_to_names(X, removed_expertrules))
+  }else{
+    print(removed_expertrules)
+  }
   cat(sprintf("\n"))
   cat(sprintf("Expert Linear terms: \n"))
-  print(confirmatory_lins)
+  if(name_lins == T){
+    print(positions_to_names(X, confirmatory_lins))
+  } else{
+    print(confirmatory_lins)
+  }
   cat(sprintf("\n"))
-  cat(sprintf("Proportion of expert rules in the final model:  %#.4f \n", prop_ek))
+  cat(sprintf("Proportion of expert knowledge in the final model:  %#.4f \n", prop_ek))
   
 } 
 
@@ -375,47 +413,21 @@ imp_terms <- function(model, n){
 
 ################################################################################
 
-#'@name rf_vs_erf
-#'@description compares ERF models with and without expert knowledge according to predictive accuracy and model complexity
-#'@param see parameters of function 'ExpertRulefit'
-#'@return dataframe = table of results for AUC, CE and number of terms on different models
-
-rf_vs_erf <- function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, name_rules = T,
-                      expert_rules = NULL, confirmatory_rules = NULL,
-                      linterms=NULL, confirmatory_lins = NULL,
-                      ntree=250, ensemble= "RF", mix=0.5, L=4, S=6, minsup=.025, 
-                      name_lins = T, intercept=F, corelim = 1, 
-                      alpha = 1, nfolds = 10, type.measure = "class",
-                      s = "lambda.min", print_output = T){
+translate_out <- function(X, expert_rules, removed_expertrules, 
+                          confirmatory_terms, out){
   
-  rf <- ExpertRulefit(X = X, y=y, Xtest=Xtest, ytest=ytest, name_rules=name_rules,
-                      name_lins = name_lins, linterms = linterms, 
-                      ntree = ntree, ensemble = ensemble, mix=mix, L=L, S=S, 
-                      minsup=minsup, intercept=intercept, corelim=corelim, 
-                      alpha =alpha, nfolds=nfolds, type.measure = type.measure, s=s, print_output = F)
-  
-  erf <- ExpertRulefit(X = X, y=y, Xtest=Xtest, ytest=ytest, name_rules=name_rules,
-                       expert_rules = expert_rules, confirmatory_rules = confirmatory_rules, 
-                       name_lins = name_lins, linterms = linterms, confirmatory_lins = confirmatory_lins, 
-                       ntree = ntree, ensemble = ensemble, mix=mix, L=L, S=S, 
-                       minsup=minsup, intercept=intercept, corelim=corelim, 
-                       alpha =alpha, nfolds=nfolds, type.measure = type.measure, s=s, print_output = F)
-  
-  
-  erf_out <- c(erf$AUC, erf$ClassErr, erf$Nterms)
-  rf_out <- c(rf$AUC, rf$ClassErr, rf$Nterms)
-  
-  out <- rbind(rf_out, erf_out)
-  colnames(out) <- c("AUC", "Classification Error", "Number of terms")
-  rownames(out) <- c("ERF w-o. EK", "ERF w. EK")
+  colnames(out$Train) <- positions_to_names(X, colnames(out$Train))
+  colnames(out$Test) <- positions_to_names(X, colnames(out$Test))
+  out$Features <- positions_to_names(X, out$Features)
+  out$ImpTerms <- positions_to_names(X, out$ImpTerms)
+  if(!(is.null(expert_rules))){
+    out$ExpertRules <- positions_to_names(X, out$ExpertRules) 
+  }
+  if(!(is.null(removed_expertrules))){
+    out$RemovedExpertRules <- positions_to_names(X, out$RemovedExpertRules) 
+  }
+  if(!(is.null(confirmatory_terms))){
+    out$ConfTerms <- positions_to_names(X, out$ConfTerms) 
+  }
   out
-  
-  
 }
-
-# Example
-# test <-rf_vs_erf(X, y, Xtest, ytest, name_rules = F, expert_rules = expert_rules, confirmatory_rules = expert_rules, 
-#                 name_lins = F, linterms = lins, confirmatory_lins = confirmatory_lins) 
-# test
-
-################################################################################

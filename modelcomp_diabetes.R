@@ -83,7 +83,7 @@ expert_rules_diab <- c("Glucose>=80 & Glucose<=135",
                        "BloodPressure>=100 & BloodPressure<=107",
                        "BloodPressure>107",
                        "BMI>=19 & BMI<=24", "BMI>=24 & BMI<=26", "BMI>26",
-                       "BMI>=25", "BloodPressure>=107", "Age>=45",
+                       "BMI>=25", "Age>=45",
                        "Glucose>=144 & Glucose<=199")
 # variables
 linterms_diab <- c("Age", "BMI", "Glucose", "Insulin")
@@ -122,7 +122,6 @@ erf_diab_c <- ExpertRuleFit(X_diab, y_diab, Xtest_diab, ytest_diab, name_rules =
                            name_lins = T, linterms = colnames(X_diab), 
                            confirmatory_lins = linterms_diab,
                            print_output = T)
-
 
 # 2. Model Complexity
 erf_diab$Nterms #nterms

@@ -147,7 +147,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
     if(!(all(confirmatory_lins %in% linterms))){
       stop("confirmatory_lins needs to be a subset of linterms.")
     }
-    confirmatory_lins <- paste("X", confirmatory_lins, sep = "")
+    confirmatory_lins <- paste("X[,",confirmatory_lins, "]", sep = "") 
   }
   
   
@@ -270,14 +270,14 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
     
     # change column names: intercept = X0, linear terms = X1,...Xp, rules as specified conditions
     if((intercept == TRUE) & (!(is.null(linterms)))){
-      colnames(Xt)[1] <- "X0"
-      colnames(Xt)[2:(length(linterms)+1)] <- paste("X", linterms, sep = "")
+      colnames(Xt)[1] <- "Intercept"
+      colnames(Xt)[2:(length(linterms)+1)] <- paste("X[,",linterms, "]", sep = "") 
       colnames(Xt)[(length(linterms)+2): ncol(Xt)] <- rulesFin
     } else if ((intercept == TRUE) & (is.null(linterms))){
-      colnames(Xt)[1] <- "X0"
+      colnames(Xt)[1] <- "Intercept"
       colnames(Xt)[2: ncol(Xt)] <- rulesFin
     } else if ((intercept == FALSE) & (!(is.null(linterms)))){
-      colnames(Xt)[1:length(linterms)] <- paste("X", linterms, sep = "")
+      colnames(Xt)[1:length(linterms)] <- paste("X[,",linterms, "]", sep = "")
       colnames(Xt)[(length(linterms)+1): ncol(Xt)] <- rulesFin
     } else{ 
       colnames(Xt) <- rulesFin
@@ -310,6 +310,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
 
     if(is.null(Xtest) == T){
       regmodel = regularized_regression(X=Xt, y=y, Xtest = NULL, ytest =NULL,
+                                        name_rules = name_rules,
                                         type_measure = type.measure,
                                         nfolds = nfolds,
                                         s = s,
@@ -325,8 +326,11 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
       
       
       if(print_output == T){
-        exp_info <- expert_output(expert_rules, removed_expertrules, confirmatory_lins, prop_ek)
-        #output <- list(regmodel, exp_info)
+        reg_info <- regr_output(X, Xtest, name_rules, regmodel)
+        exp_info <- expert_output(X, name_rules, name_lins,
+                                  expert_rules, removed_expertrules, 
+                                  confirmatory_lins, prop_ek)
+        output <- list(reg_info, exp_info)
         
         
         out = c(Train = Xt , Model = regmodel$Results, 
@@ -353,7 +357,6 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                 PropEKImp = prop_ek_imp)
       }
       
-      class(out) = "ExpertRulemodel"
       
     }else{
       
@@ -398,7 +401,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
       
       # add prediction and error to model output
       regmodel = regularized_regression(X = Xt, y = y, Xtest = X_test,
-                                        ytest = ytest, 
+                                        ytest = ytest, name_rules = name_rules,
                                         type_measure = type.measure,
                                         nfolds = nfolds,
                                         s = s,
@@ -412,9 +415,12 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
       prop_ek <- expert_occurences(expert_rules, confirmatory_lins, model_features)
       prop_ek_imp <- expert_occurences(expert_rules, confirmatory_lins, imp_features)
       
+      
       if(print_output == T){
-        exp_info <- expert_output(expert_rules, removed_expertrules, confirmatory_lins, prop_ek)
-        output <- list(regmodel, exp_info)
+        reg_info <- regr_output(X, Xtest, name_rules, regmodel)
+        exp_info <- expert_output(X, name_rules, name_lins, expert_rules, 
+                                  removed_expertrules, confirmatory_lins, prop_ek)
+        output <- list(reg_info, exp_info)
         
         out = list(Train = Xt, Test = X_test, Model = regmodel$Results, 
                    Features = regmodel$Results$features, 
@@ -444,50 +450,15 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                    PropEK = prop_ek, PropEKImp = prop_ek_imp)
         
       }
-      
-      class(out) = "ExpertRulemodel"
-      
     }
+  
+  if(name_rules == T){
+    out <- translate_out(X, expert_rules, removed_expertrules, 
+                         confirmatory_terms, out)
+  }
+  
+  class(out) = "ExpertRulemodel"
+  
   out
 }
-
-
-    
-#===============================================================================
-
-# Simulation Example
-
-# Example
-# set.seed(179)
-# simulation <- create_simulation(n_vars = 100, n_obs = 1000,
-#                                n_rule_vars = 10, 
-#                                n_rel_rules = 20)
-
-
-# Dataset of relevant predictors + y 
-# rel_predictor_data <- simulation[[1]]
-
-
-# Data
-# data <- simulation[[2]]
-# sets <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)
-# X <- sets[[1]]
-# y <- sets[[2]]
-# Xtest <- sets[[3]]
-# ytest <- sets[[4]]
-
-# Expert knowledge
-# expert_rules <- simulation[[3]]
-
-
-# ExpertRuleFit Modell
-# erfmodel <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest, name_rules = F, expert_rules = expert_rules)
-# model <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest)
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#' TODO:
-#' variable importance, wie viel Prozent der Varianz werden durch Expert-Rules erklaert
-#' Anruf Aerzte
 
