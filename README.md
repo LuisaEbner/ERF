@@ -53,5 +53,5 @@ Experiments with the cancer data may be found in:
 The file *modelcomp_main.R* contains a function with which the ERF model without expert knowledge, with optional expert knowledge and with confirmatory expert knowledge are compared according to the number or terms, the average rule length, the AUC and Classification Error and the usage of Expert knowledge in the final model and among its most important features.
 Additionally, all ERF model results are compared to the corresponding PRE model, a RuleFit implementation by Maroleijn Fokkema ( https://github.com/marjoleinF/pre).
 
-Finally, the file *anova_expertknowledge* analyses the amount of variance explained by each rule or linear term within the expert knowledge inserted to the ExpertRuleFit model.
+Finally, the file *anova_expertknowledge.R* analyses the amount of variance explained by each rule or linear term within the expert knowledge inserted to the ExpertRuleFit model.
 
