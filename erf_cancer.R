@@ -126,9 +126,12 @@ linterms <- c("Number.of.sexual.partners", "Age", "Num.of.pregnancies",
 # ERF Model
 erf_cancer <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                             expert_rules = expert_rules, 
-                            linterms = linterms, confirmatory_lins = linterms)
+                            linterms = linterms, confirmatory_lins = linterms,
+                            print_output = F)
 
-
+erf_cancer$Model
+erf_cancer$Nterms
+erf_cancer$AvgRuleLength
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

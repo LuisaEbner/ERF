@@ -77,7 +77,7 @@ y_diab <- sets_diab[[2]]
 Xtest_diab <- sets_diab[[3]]
 ytest_diab <- sets_diab[[4]]
 
-# train-test-split for XRF and PRE
+# train-test-split for PRE
 train_data_diab <- cbind.data.frame(X_diab, y_diab)
 test_data_diab <- cbind.data.frame(Xtest_diab, ytest_diab)
 

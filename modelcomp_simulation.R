@@ -76,7 +76,7 @@ y_sim <- sets_sim[[2]]
 Xtest_sim <- sets_sim[[3]]
 ytest_sim <- sets_sim[[4]]
 
-# train-test-split for XRF and PRE
+# train-test-split for PRE
 train_data_sim <- cbind.data.frame(X_sim, y_sim)
 test_data_sim <- cbind.data.frame(cbind(Xtest_sim, ytest_sim))
 

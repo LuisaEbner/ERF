@@ -6,7 +6,7 @@
 ################################################################################
 ################################################################################
 
-#=============================== LIBRARIES =====================================
+# Library
 
 #library(pre)
 #library(purrr)
@@ -28,7 +28,7 @@
 
 # external functions
 source("simulation.R")
-source("erf.R")
+source("erf_main.R")
 
 #===============================================================================
 #                               SIMULATION
@@ -36,14 +36,12 @@ source("erf.R")
 
 simulation <- create_simulation(n_vars = 20, n_obs = 1000,
                                 mu = 0, sigma = 1, 
-                                n_lin_preds = 3,
                                 n_rule_vars = 10, 
                                 n_rel_rules = 5, 
                                 optional_lengths = c(1, 2),
                                 weights = c(1/2, 1/2),
                                 mu_beta = 0, sigma_beta = 5, 
-                                mu_epsilon = 0, sigma_epsilon = 0.025, 
-                                format = T)
+                                mu_epsilon = 0, sigma_epsilon = 0.025)
 
 #===============================================================================
 #                                 DATA 
@@ -51,31 +49,25 @@ simulation <- create_simulation(n_vars = 20, n_obs = 1000,
 
 data <- simulation[[2]]
 
-#===============================================================================
-#                      SIMULATED EXPERT/DOMAIN KNOWLEDGE
-#===============================================================================
-
-expert_knowledge <- simulation[[3]]
-expert_rules <- expert_knowledge[[1]]
-expert_lins <- as.numeric(expert_knowledge[[2]])
-
-#===============================================================================
-#                          EXPERT RULEFIT MODEL
-#===============================================================================
-
-# Function Input
-
+# train-test-split 
 sets <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)
 X <- sets[[1]]
 y <- sets[[2]]
 Xtest <- sets[[3]]
 ytest <- sets[[4]]
 
-# Model
+#===============================================================================
+#                      SIMULATED EXPERT/DOMAIN KNOWLEDGE
+#===============================================================================
 
-erfmodel <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
-                           expert_rules = expert_rules,
-                           linterms = expert_lins,
-                           confirmatory_rules = expert_rules)
+expert_rules <- simulation[[3]]
+
+#===============================================================================
+#                          EXPERT RULEFIT MODEL
+#===============================================================================
+
+erf_sim <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest, name_rules = F,
+                          expert_rules = expert_rules,
+                          confirmatory_rules = expert_rules)
 
 

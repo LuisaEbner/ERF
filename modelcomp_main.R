@@ -79,10 +79,14 @@ modelcomp <- function(data, train_frac = 0.7, name_rules = T, expert_rules,
   # 1. ERF without expert knowledge
   rf <- ExpertRuleFit(X, y, Xtest, ytest, name_rules = name_rules, print_output = F)
   
+  print("ERF without expert knowledge - check")
+  
   # 2. ERF with optional expert knowledge
   erf_opt <- ExpertRuleFit(X, y, Xtest, ytest, name_rules = name_rules,
                            expert_rules = expert_rules, name_lins = name_lins,
                            linterms = linterms, print_output = F)
+  
+  print("ERF with optional expert knowledge - check")
   
   # 3. ERF with confirmatory expert knowledge
   erf_conf <- ExpertRuleFit(X, y, Xtest, ytest, name_rules = name_rules,
@@ -91,9 +95,14 @@ modelcomp <- function(data, train_frac = 0.7, name_rules = T, expert_rules,
                             name_lins = name_lins, linterms = linterms, 
                             confirmatory_lins = linterms,
                             print_output = F)
+  
+  print("ERF with confirmatory expert knowledge - check")
+  
   # 4. PRE
   pre <- pre(y ~ ., data = train, family = "binomial", type = type, 
              ntrees = 250)
+  
+  print("PRE - check")
   
   # Model Measures
   pre_coefs <- coef(pre)
@@ -172,7 +181,7 @@ comp_diab$ImportantTerms
 source("simulation.R")
 set.seed(179)
 
-simulation <- create_simulation(n_vars = 200, n_obs = 700,
+simulation <- create_simulation(n_vars = 20, n_obs = 700,
                                 n_rule_vars = 5, 
                                 n_rel_rules = 10, mu_epsilon = 0.05)
 # data

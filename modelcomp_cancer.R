@@ -129,8 +129,12 @@ rf_cancer$ImpTerms
 
 # Model with optional expert knowledge
 erf_cancer <- ExpertRuleFit(X_cancer, y_cancer, Xtest_cancer, ytest_cancer, 
-                            name_rules = F, expert_rules = expert_rules_cancer,
-                            print_output = T)
+                            name_rules = T, expert_rules = expert_rules_cancer,
+                            print_output = F)
+
+erf_cancer$Model
+erf_cancer$ExpertRules
+# ..see more measures
 
 # Model Complexity
 erf_cancer$Nterms #nterms
@@ -148,7 +152,7 @@ erf_cancer$ImpTerms
 
 # Model with confirmatory expert knowledge
 erf_cancer_c <- ExpertRuleFit(X_cancer, y_cancer, Xtest_cancer, ytest_cancer,
-                              name_rules = F, expert_rules = expert_rules_cancer, 
+                              name_rules = T, expert_rules = expert_rules_cancer, 
                               confirmatory_rules = expert_rules_cancer, 
                               print_output = T)
 
@@ -161,7 +165,7 @@ erf_cancer_c$AUC # AUC
 erf_cancer_c$ClassErr # Classification Error
 
 # Most important variables 
-erf_cancer_c$ImpTerms
+# erf_cancer_c$ImpTerms
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
