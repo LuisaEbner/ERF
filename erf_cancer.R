@@ -6,17 +6,7 @@
 ################################################################################
 ################################################################################
 
-# Libraries
-
-library(gbm)
-library(inTrees)
-library(randomForest)
-library(pROC)
-library(MASS)
-library(mice)
-library(DMwR)
-
-# external functions
+# External functions
 source("erf_cancer_dataprep.R")
 source("erf_main.R")
 
@@ -95,7 +85,7 @@ dk_lins <- c( "Num.of.pregnancies", "Number.of.sexual.partners")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#                         HEURISTIC EXPERT KNOWLEDGE
+#                        1.3. HEURISTIC EXPERT KNOWLEDGE
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ek_rules <- c()

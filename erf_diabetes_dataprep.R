@@ -62,5 +62,5 @@ prepare_diabetes_data <- function(data, imp_method = "rf"){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # EXAMPLE
-data <- read.csv(file = 'diabetes.csv', header = T)
-data <- prepare_diabetes_data(data)
+# data <- read.csv(file = 'diabetes.csv', header = T)
+# data <- prepare_diabetes_data(data)

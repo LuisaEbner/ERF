@@ -102,7 +102,7 @@ names_to_positions <- function(X, name_rules){
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#'@name positionto_names
+#'@name positions_to_names
 #'@description replaces the position of a variable (X[,xy]) in an expert rule with its original variable name to become readable for the human user
 #'@param X data frame of input variables
 #'@param pos_rules vector of strings, containing expert rules with variable names as (X[,xy])
@@ -173,10 +173,8 @@ names_to_numbers <- function(X, variable_names){
 #' @description performs regularized regression as described in stage 2 of the ERF model
 #' @param X: matrix of predictor variables (training set)
 #' @param y: vector of target values as a binary, 0-1-encoded factor (training set)
-#' @param type_measure "auc", "mse", "mae", "class"
 #' @param Xtest optional matrix of predictor variables (test set)
 #' @param ytest optional vector of target values, 0-1-encoded factor (test set)
-#' @param nfolds: number of cross validation folds
 #' @param s: string, either "lambda.min" or "lambda.1se", where "lambda.min" indicates the value of lambda that gives minimum mean cross-validated error, whereas  "lambda.1se": value of lambda which gives the most regularized model such that error is within one standard error of the minimum. 
 #' @param confirmatory_cols: vector of integers indicating the columns of the input variables that should not be penalized (confirmatory model terms)
 #' @param alpha: elastic net mixing parameter. Allowed values include: 1 for lasso regression, 0 for ridge regression, any value between 0 and 1 for elastic net regression.
@@ -190,12 +188,9 @@ names_to_numbers <- function(X, variable_names){
 
 
 regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
-                                   name_rules = T,
-                                   type_measure = "class",
-                                   nfolds = 10,
                                    s = "lambda.min",
                                    confirmatory_cols =NULL, 
-                                   alpha = 1, standardize, 
+                                   alpha = 1, standardize = F, 
                                    n = 5,
                                    print_output = T){
   
@@ -209,8 +204,9 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   }
   
   # # find best lambda via cross validation
-  cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", alpha = alpha, 
-                     type_measure = "class", nfolds = 10, standardize = standardize, 
+  cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", 
+                     alpha = alpha, 
+                     standardize = standardize, 
                      penalty.factor = p.fac)
   
   if (s == "lambda.min"){
@@ -241,9 +237,9 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   
   # Variable Importance
   important_terms <- imp_terms(Results, n)
-
+  
   if (is.null(Xtest) == T) {
-    result <- list(Results = Results, nfolds = nfolds, s = s, n_terms = n_terms,
+    result <- list(Results = Results, s = s, n_terms = n_terms,
                    lambda =lambda, PenFac = p.fac, AvgRuleLength = avgrl, 
                    ImpTerms = important_terms)
     
@@ -255,12 +251,12 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
     auc <-  auc(ytest, as.integer(pred_class))
     ce <-   ce(ytest, as.integer(pred_class))
     
-    result <- list(Results = Results, nfolds = nfolds, s = s,
+    result <- list(Results = Results, s = s,
                    n_terms = n_terms, lambda =lambda, 
                    Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac,
                    Predictions = predictions, AvgRuleLength = avgrl,
                    ImpTerms = important_terms)
-    }
+  }
   result
 }
 
@@ -379,7 +375,7 @@ expert_output <- function(X, name_rules = T, name_lins = T, expert_rules,
   } else {
     print("None.")
   }
-
+  
   cat(sprintf("\n"))
   cat(sprintf("Proportion of expert knowledge in the final model:  %#.4f \n", prop_ek))
   
@@ -444,6 +440,3 @@ translate_out <- function(X, expert_rules, removed_expertrules,
   }
   out
 }
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
