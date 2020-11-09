@@ -89,7 +89,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                          name_lins = T, linterms=NULL, confirmatory_lins = NULL,
                          ntree=250, ensemble= "GBM", mix=0.5, L=3, S=6, minsup=.025, 
                          intercept=T, corelim = 1, 
-                         alpha = 1, nfolds = 10, type.measure = "class",
+                         alpha = 1,
                          s = "lambda.min", standardize = F, n_imp = 10,
                          print_output = T) {
   
@@ -184,11 +184,6 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
   
   if((alpha<0)|(alpha>1)){
     stop("invalid choice for alpha, please chose a value between 0 and 1.")
-  }
-  
-  if(nfolds < 1){
-    stop("Invalid choice for nfolds. Number of cv folds needs to be
-         an integer greater greater or equal to one.")
   }
   
   
@@ -313,9 +308,6 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
   
   if(is.null(Xtest) == T){
     regmodel = regularized_regression(X=Xt, y=y, Xtest = NULL, ytest =NULL,
-                                      name_rules = name_rules,
-                                      type_measure = type.measure,
-                                      nfolds = nfolds,
                                       s = s,
                                       confirmatory_cols = confirmatory_cols,
                                       alpha = alpha, standardize = standardize, n = n_imp,
@@ -403,9 +395,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
     
     # add prediction and error to model output
     regmodel = regularized_regression(X = Xt, y = y, Xtest = X_test,
-                                      ytest = ytest, name_rules = name_rules,
-                                      type_measure = type.measure,
-                                      nfolds = nfolds,
+                                      ytest = ytest, 
                                       s = s,
                                       confirmatory_cols = confirmatory_cols,
                                       alpha = alpha,
