@@ -16,8 +16,11 @@ library(mice)
 #' @name prepare_diabetes_data
 #' @description Preparation (Cleaning, Feature Engineering, Missing Value Imputation, Resampling) of the UCI dataset Pima Indians Diabetes.
 #' @param data UCI dataset Pima Indians Diabetes
-#' @param imp_method a single string, or a vector of strings, specifying the imputation method to be used for SkinThickness and Insulin. If specified as a single string, the same method will be used for all blocks. Common options: "pmm" = Predictive mean matching, "midastouch"	=	Weighted predictive mean matching, "sample" = 	Random sample from observed values, "cart"	=	Classification and regression trees and "rf" = 	Random forest imputations(default)
-#' @return prepared UCI diabetes dataset
+#' @param imp_method a single string, or a vector of strings, specifying the imputation method to be used for SkinThickness and Insulin. If specified as a single string, the same method will be used for all blocks.
+#'                  Common options: "pmm" = Predictive mean matching, "midastouch"	=	Weighted
+#'                  predictive mean matching, "sample" = 	Random sample from observed values,
+#'                  "cart"	=	Classification and regression trees and "rf" = 	Random forest imputations(default)
+#' @return prepared UCI diabetes data set
 
 prepare_diabetes_data <- function(data, imp_method = "rf"){
 
@@ -49,6 +52,9 @@ prepare_diabetes_data <- function(data, imp_method = "rf"){
   mice_complete <- mice::complete(mice_imp)
   data$SkinThickness <- mice_complete$SkinThickness
   data$Insulin <- mice_complete$Insulin
+  
+  names(data)[names(data) == "BloodPressure"] <- "BP"
+  names(data)[names(data) == "DiabetesPedigreeFunction"] <- "DPF"
 
   return(data)
 }
@@ -56,5 +62,5 @@ prepare_diabetes_data <- function(data, imp_method = "rf"){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # EXAMPLE
-# data <- read.csv(file = 'diabetes.csv', header = T)
-# data <- prepare_diabetes_data(data)
+data <- read.csv(file = 'diabetes.csv', header = T)
+data <- prepare_diabetes_data(data)

@@ -1,4 +1,5 @@
 # auxiliary function used in main function ExpertRuleFit
+# implementation by Malte Nalenz
 
 #' @importFrom randomForest randomForest
 #' @importFrom randomForest combine

@@ -102,7 +102,7 @@ names_to_positions <- function(X, name_rules){
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#'@name positions_to_names
+#'@name positionto_names
 #'@description replaces the position of a variable (X[,xy]) in an expert rule with its original variable name to become readable for the human user
 #'@param X data frame of input variables
 #'@param pos_rules vector of strings, containing expert rules with variable names as (X[,xy])
@@ -180,8 +180,6 @@ names_to_numbers <- function(X, variable_names){
 #' @param s: string, either "lambda.min" or "lambda.1se", where "lambda.min" indicates the value of lambda that gives minimum mean cross-validated error, whereas  "lambda.1se": value of lambda which gives the most regularized model such that error is within one standard error of the minimum. 
 #' @param confirmatory_cols: vector of integers indicating the columns of the input variables that should not be penalized (confirmatory model terms)
 #' @param alpha: elastic net mixing parameter. Allowed values include: 1 for lasso regression, 0 for ridge regression, any value between 0 and 1 for elastic net regression.
-#' @param dfmax:	Limits the maximum number of variables in the model. Useful for very large nvars, if a partial path is desired.
-#' @param pmax:	Limits the maximum number of variables ever to be nonzero
 #' @param standardize Logical flag for X variable standardization, prior to fitting the model sequence. The coefficients are always returned on the original scale.
 #' @param n number of most important terms to select, default = 10
 #' @param print_output logical value, indicating whether a model output should be printed
@@ -197,8 +195,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                                    nfolds = 10,
                                    s = "lambda.min",
                                    confirmatory_cols =NULL, 
-                                   alpha = 1,
-                                   pmax, dfmax, standardize, 
+                                   alpha = 1, standardize, 
                                    n = 5,
                                    print_output = T){
   
@@ -213,8 +210,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   
   # # find best lambda via cross validation
   cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", alpha = alpha, 
-                     type_measure = "class", nfolds = 10, pmax = pmax, 
-                     dfmax = dfmax, standardize = standardize, 
+                     type_measure = "class", nfolds = 10, standardize = standardize, 
                      penalty.factor = p.fac)
   
   if (s == "lambda.min"){
@@ -223,8 +219,8 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
     lambda <- cvfit$lambda.1se
   }
   
-  fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha, pmax = pmax, 
-                dfmax = dfmax, standardize = standardize, penalty.factor = p.fac)
+  fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha,
+                standardize = standardize, penalty.factor = p.fac)
   
   # variable coefficients
   coefs <- coef(fit, s=lambda);

@@ -22,10 +22,13 @@ library(caret)
 library(mlbench)
 library(Metrics)
 
-# External functions
+#~~~~~~~~~~~~~~~~~~~~~~~~~~External Functions~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# External functions implemented by Luisa Ebner
 source("simulation.R")
 source("erf_auxiliaries.R")
-# functions implemented by Malte Nalenz
+
+# External functions implemented by Malte Nalenz
 source("take1.R")
 source("genrulesgbm.R")
 source("genrulesrf.R")
@@ -57,11 +60,9 @@ source("create_test.R")
 #' @param intercept If TRUE an intercept is included (for classification highly recommended)
 #' @param corelim minimum value of correlation where correlated rules are cleaned
 #' @param alpha The elasticnet mixing parameter, alpha = 1 corresponds to lasso, alpha = 0 to ridge, 0<alpha<1 to elastic net
-#' @param nfolds number of CV folds to find the best lambda
+#' @param nfolds number of CV folds to find the best lambda 
 #' @param type.measure measure according which to optimize lambda; can be either "auc", "class", "mse" or "mae"
 #' @param s: string, either "lambda.min" or "lambda.1se", where "lambda.min" indicates the value of lambda that gives minimum mean cross-validated error, whereas  "lambda.1se": value of lambda which gives the most regularized model such that error is within one standard error of the minimum.
-#' @param dfmax:	Limits the maximum number of variables in the model. Useful for very large nvars, if a partial path is desired.
-#' @param pmax:	Limits the maximum number of variables ever to be nonzero
 #' @param standardize Logical flag for X variable standardization, prior to fitting the model sequence. The coefficients are always returned on the original scale.
 #' @param n_imp number of most important terms/features to be selected and printed in model output, default = 5
 #' @return An object of class ExpertRuleFit, which is a list of the following components:
@@ -84,10 +85,10 @@ source("create_test.R")
 ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                          name_rules = T, expert_rules = NULL, confirmatory_rules = NULL,
                          name_lins = T, linterms=NULL, confirmatory_lins = NULL,
-                         ntree=250, ensemble= "GBM", mix=0.5, L=4, S=6, minsup=.025, 
+                         ntree=250, ensemble= "GBM", mix=0.5, L=3, S=6, minsup=.025, 
                          intercept=T, corelim = 1, 
                          alpha = 1, nfolds = 10, type.measure = "class",
-                         s = "lambda.min", dfmax = 500, pmax = 500, standardize = T, n_imp = 10,
+                         s = "lambda.min", standardize = F, n_imp = 10,
                          print_output = T) {
   
   
@@ -315,8 +316,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                                         nfolds = nfolds,
                                         s = s,
                                         confirmatory_cols = confirmatory_cols,
-                                        alpha = alpha, dfmax =dfmax, pmax = pmax,
-                                        standardize = standardize, n = n_imp,
+                                        alpha = alpha, standardize = standardize, n = n_imp,
                                         print_output = print_output)
       
       model_features <- regmodel$Results$features
@@ -406,7 +406,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
                                         nfolds = nfolds,
                                         s = s,
                                         confirmatory_cols = confirmatory_cols,
-                                        alpha = alpha, dfmax =dfmax, pmax = pmax,
+                                        alpha = alpha,
                                         standardize = standardize, n = n_imp,
                                         print_output = print_output)
       

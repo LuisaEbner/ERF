@@ -1,4 +1,5 @@
 # axiliary function used in the main function ExpertRuleFit
+# implementation by Malte Nalenz
 
 #' @import gbm
 #' @import inTrees

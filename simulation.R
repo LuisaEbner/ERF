@@ -79,7 +79,7 @@ create_simulation <- function(n_vars = 100, n_obs = 2000,
   
 
   
-  # 3. Define all relevant predictors (rules + linear terms)
+  # 3. Define all relevant predictors (rules only)
   rule_preds <- define_rules(n_rel_rules, rule_lengths, conditions)
 
   
