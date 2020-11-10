@@ -1,24 +1,37 @@
 ################################################################################
 ################################################################################
 #                                                                              #
-#                   ExpertRulefit - Auxiliary Functions                        #
+#                   Expert Rulefit - Auxiliary Functions                       #
 #                                                                              #                                                                              #
 ################################################################################
 ################################################################################
 
-# Library 
+# Libraries
 library(caret)
+library(stringr)
+
+
+# Functions
+# 1. create_X_y_Xtest_ytest
+# 2. names_to_positions
+# 3. positions_to_names
+# 4. names_to_numbers
+# 5. regularized_regression
+# 6. regr_output
+# 7. expert_occurences
+# 8. expert_output
+# 9. avergage_rule_length
+# 10. imp_terms
+# 11. translate_out
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Functions
-
 #' @name create_X_y_Xtest_ytest
-#' @description takes a dataset including a binary target column and turns it into training and test data for X and y, separately. Converts y to make it applicable to glmnet. When train_frac = 1, no test data is created.
-#' @param data: dataframe object including predictors and binary target
-#' @param train_frac: value between 0 and 1 to specify the fraction of training samples to be sampled
-#' @param pos_class: string or value of the positive class value of y, eg. 1,"pos","TRUE","yes" etc.
-#' @return list object, including X, Xtest, y, ytest
+#' @description turns a data set into a valid set of inputs for the main function ExpertRuleFit.
+#' @param data: data frame including predictor attributes and binary target attribute
+#' @param train_frac: specifies the fraction of training sample
+#' @param pos_class: specifies the datasets positive target value, eg. 1,"pos","yes" 
+#' @return list object of length 4 including the valid set of intputs as X, Xtest, y, ytest
 
 
 create_X_y_Xtest_ytest <- function(data, train_frac, pos_class = 1,
@@ -39,18 +52,18 @@ create_X_y_Xtest_ytest <- function(data, train_frac, pos_class = 1,
   
   data <- data[complete.cases(data), ]
   
-  # train-test-split
+  # split training- and test data
   set.seed(45)
   sample <- sample.int(n = nrow(data),
                        size = floor(train_frac*nrow(data)), replace = F)
   train <- data[sample, ]
   test  <- data[-sample, ]
   
-  # convert dataframe to matrix format, remove target column
+  # convert data frame into matrix, remove target attribute
   X <- model.matrix(y ~., train)[,-1]
   Xtest <- model.matrix(y~.,test)[,-1]
   
-  # Convert the target column of the training data to a 0-1-coded factor
+  # Convert target attribute into 0-1-coded factor
   y <- factor(ifelse(train$y == pos_class, 1, 0))
   ytest <- factor(ifelse(test$y == pos_class, 1, 0))
   
@@ -61,10 +74,10 @@ create_X_y_Xtest_ytest <- function(data, train_frac, pos_class = 1,
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #'@name names_to_positions
-#'@description replaces the name of a variable in an expert rule with its position to become readable for the function createX
-#'@param X data frame of input variables
-#'@param name_rules vector of strings, containing expert rules with variable names as in the original dataset
-#'@return the same vector as name_rules, just with the original variable names replaced by their position in the dataset
+#'@description replaces the name of predictor attributes with their column position.
+#'@param X data frame of predictor attributes
+#'@param name_rules vector of expert rules using the original attribute names
+#'@return vector of expert rules using X[,column position] referring to predictor attributes
 
 names_to_positions <- function(X, name_rules){
   names <- colnames(X)
@@ -103,10 +116,10 @@ names_to_positions <- function(X, name_rules){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #'@name positions_to_names
-#'@description replaces the position of a variable (X[,xy]) in an expert rule with its original variable name to become readable for the human user
-#'@param X data frame of input variables
-#'@param pos_rules vector of strings, containing expert rules with variable names as (X[,xy])
-#'@return the same vector as pos_rules, just with the original variable names instead of positions
+#'@description  replaces the column positions of predictor attributes with their names.
+#'@param X data frame of predictor attributes
+#'@param pos_rules vector of expert rules using X[,column position] referring to predictor attributes
+#'@return vector of expert rules using the original attribute names
 
 
 positions_to_names <- function(X, pos_rules){
@@ -143,14 +156,13 @@ positions_to_names <- function(X, pos_rules){
   name_rules
 }
 
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #'@name names_to_numbers
-#'@description replaces the name of a variable in a number indicating its column position 
-#'@param X data frame of input variables
-#'@param name_rules vector of variable names as the names of relevant linear terms
-#'@return a vector of numbers, as the variable's column positions in the dataset
+#'@description replaces the names of predictor attributes with numbers indicating their column positions.
+#'@param X data frame of predictor attributes
+#'@param variable_names vector of attribute names 
+#'@return a vector of numbers corresponding to the attributes' column position
 
 names_to_numbers <- function(X, variable_names){
   names <- colnames(X)
@@ -170,31 +182,36 @@ names_to_numbers <- function(X, variable_names){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @name regularized_regression
-#' @description performs regularized regression as described in stage 2 of the ERF model
-#' @param X: matrix of predictor variables (training set)
-#' @param y: vector of target values as a binary, 0-1-encoded factor (training set)
-#' @param Xtest optional matrix of predictor variables (test set)
-#' @param ytest optional vector of target values, 0-1-encoded factor (test set)
-#' @param s: string, either "lambda.min" or "lambda.1se", where "lambda.min" indicates the value of lambda that gives minimum mean cross-validated error, whereas  "lambda.1se": value of lambda which gives the most regularized model such that error is within one standard error of the minimum. 
-#' @param confirmatory_cols: vector of integers indicating the columns of the input variables that should not be penalized (confirmatory model terms)
-#' @param alpha: elastic net mixing parameter. Allowed values include: 1 for lasso regression, 0 for ridge regression, any value between 0 and 1 for elastic net regression.
-#' @param standardize Logical flag for X variable standardization, prior to fitting the model sequence. The coefficients are always returned on the original scale.
-#' @param n number of most important terms to select, default = 10
-#' @param print_output logical value, indicating whether a model output should be printed
-#' @return if print_output == T: console output including: nfolds, s, lambda, number of terms in the final model, 
-#' mean_cv_error, the final model as a dataframe of variable names and coefficients, Xtest, a confusion matrix, the AUC and the Classification error
-#' else if print_output == F: list with the following elements: Results = dataframe of variable names and coefficient,  
-#' n_terms = number of terms in the final model, lambda,  mean cv error, Confusion matrix, AUC and classification error.
-
+#' @description performs regularized regression as described in Stage 3 of the ERF model.
+#' @param X: data frame of predictor attributes (training set)
+#' @param y: vector of the target attribute (training set)
+#' @param Xtest optional data frame of predictor attributes (test set)
+#' @param ytest optional vector of the target attribute (test set)
+#' @param s: string, either "lambda.min" or "lambda.1se". "lambda.min" searches the value of lambda that gives minimum mean cross-validated error, "lambda.1se" searches the most regularized model such that error is within one standard error of the minimum. 
+#' @param confirmatory_cols: vector of numbers indicating the column positions of attributes to be spared from penalization.
+#' @param alpha: see function glmnet
+#' @param standardize see function glmnet
+#' @param n number of most important terms to print as part of the ERF model output
+#' @param print_output logical value, indicating whether model output should be printed
+#' @return list of the following elements:
+#'   \item{Results}{returns a data frame, which lists the base classifiers in the final model together with their corresponding coefficients.}
+#'   \item{n_terms}{returns the number of base classifiers in the final model as an indicator of model complexity.}
+#'   \item{Conf_Mat}{returns a confusion matrix indicating predictive performance on the test set.}
+#'   \item{AUC}{returns the Area Under the Curve. Values close to 1 indicate high predictive accuracy whereas values close to 0.5 indicate an uninformative classifier.}
+#'   \item{CE}{returns the classification error evaluated on the test set.}
+#'   \item{PenFac}{returns the penalty factors.}
+#'   \item{Predictions}{returns a binary vector of target predictions for the observations in the test set.}
+#'   \item{AvgRuleLength{returns the average lengths of all rules included in the final prediction model.}
+#'   \item{ImpTerms}{returns a character vector including the n_imp most important base classifiers according to the absolute value of their respective coefficients.}
 
 regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                                    s = "lambda.min",
                                    confirmatory_cols =NULL, 
                                    alpha = 1, standardize = F, 
-                                   n = 5,
-                                   print_output = T){
+                                   n = 5, print_output = T){
   
   set.seed(123) 
+  
   # define penalties according to confirmatory columns
   if(length(confirmatory_cols) == 0){
     p.fac = rep(1, ncol(X))
@@ -203,7 +220,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
     p.fac[confirmatory_cols] <- 0
   }
   
-  # # find best lambda via cross validation
+  # find best lambda via cross validation
   cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", 
                      alpha = alpha, 
                      standardize = standardize, 
@@ -218,13 +235,14 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha,
                 standardize = standardize, penalty.factor = p.fac)
   
-  # variable coefficients
-  coefs <- coef(fit, s=lambda);
+  # attribute coefficients
+  coefs <- coef(fit, s=lambda)
+  
   # non-zero coefficients
   coefs[which(coefs != 0 ) ] 
-  # non-zero coefficient feature names
   coefs@Dimnames[[1]][which(coefs != 0 ) ]  
-  # number of non-zero coefficients
+  
+  # number of non-zero coefficients (= number of terms/features)
   n_terms = length(coefs[which(coefs != 0 ) ] - 1)
   
   Results <- data.frame( features = coefs@Dimnames[[1]][ which(coefs != 0 ) ], 
@@ -232,10 +250,10 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   )
   
   
-  # Average Rule length
+  # Average rule length
   avgrl <- average_rule_length(Results$features)
   
-  # Variable Importance
+  # Feature importance
   important_terms <- imp_terms(Results, n)
   
   if (is.null(Xtest) == T) {
@@ -263,27 +281,24 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @title regr_output
-#' @description  prints all relevant glmnet model information as received from the function 'regularized_regression'
-#' @param see function description 'regularized_regression'
-#' @return print statements
+#' @description  prints the function output of 'regularized regression'.
 
 
 regr_output <- function(X, Xtest, name_rules, regmodel){
-  cat(sprintf("Final ensemble with CV (k= %d) error with s = %s\n", 
-              regmodel$nfolds, regmodel$s))
+  cat(sprintf("Final ensemble with 10 fold CV error with s = %s\n", regmodel$s))
   cat(sprintf("\n"))
   cat(sprintf("Lambda = %f \n", regmodel$lambda))
   cat(sprintf("Number of terms = %d \n", regmodel$n_terms))
   cat(sprintf("Average rule length = %#.4f \n", regmodel$AvgRuleLength))
   cat(sprintf("\n"))
-  cat(sprintf("Regularized Logistic Regression Model: \n"))
+  cat(sprintf("Regularized logistic regression model: \n"))
   cat(sprintf("\n"))
   if(name_rules == T){
     regmodel$Results$features <- positions_to_names(X, regmodel$Results$features)
   } 
   print(regmodel$Results)
   cat(sprintf("\n"))
-  cat(sprintf(" Most important Features (acc. to coefs):\n"))
+  cat(sprintf(" Most important features:\n"))
   cat(sprintf("\n"))
   if(name_rules == T){
     regmodel$ImpTerms <- positions_to_names(X, regmodel$ImpTerms)
@@ -304,15 +319,12 @@ regr_output <- function(X, Xtest, name_rules, regmodel){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @title expert_occurences
-#' @description calculates the proportion of expert rules that entered the final ERF model
-#' @param expert_rules vector of rule strings, including all of the external expert knowledge in form of rules
-#' @param model_rules vector of strings, including all rules and variables included in the final Expert-Rulefit model (after regularized regression)
-#' @return value between 0 and 1, indicating the proportion of expert rules and expert linear terms that entered the final ERF model
-#'                    
+#' @description calculates the proportion of expert knowledge that entered the final ERF model.
 
 expert_occurences <- function(expert_rules, confirmatory_lins, model_features){
   ek <- c(expert_rules, confirmatory_lins)
   n_ek <- length(ek)
+  
   # counter for expert rules in the final model
   ek_in = 0
   
@@ -331,15 +343,13 @@ expert_occurences <- function(expert_rules, confirmatory_lins, model_features){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @title expert_output
-#' @description  prints the expert rules and the proportion of expert knowledge that entered the final ERF model 
-#' @param expert_rules vector of rule strings, including all of the external expert knowledge in form of rules
-#' @param prop_ek proportion of expert rules and variables that entered the final ERF model
-#' @return print statements
+#' @description  prints an information summary on expert knowledge that entered the final ERF model.
+
 
 expert_output <- function(X, name_rules = T, name_lins = T, expert_rules,
                           removed_expertrules,
                           confirmatory_lins, prop_ek){
-  cat(sprintf("All Expert Rules: \n"))
+  cat(sprintf("All expert rules: \n"))
   cat(sprintf("\n"))
   if (!(is.null(expert_rules))){
     if(name_rules == T){
@@ -352,7 +362,7 @@ expert_output <- function(X, name_rules = T, name_lins = T, expert_rules,
   }
   
   cat(sprintf("\n"))
-  cat(sprintf("Expert Rules removed due to low support or correlation withother rules in the model: \n"))
+  cat(sprintf("Expert rules removed due to low support or correlation withother rules in the model: \n"))
   cat(sprintf("\n"))
   if(!(is.null(removed_expertrules))){
     if(name_rules == T){
@@ -384,11 +394,7 @@ expert_output <- function(X, name_rules = T, name_lins = T, expert_rules,
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @name avergage_rule_length
-#' @description calculates the average rule lengths of the rules in the final model
-#' @param rules rule strings = features of the final model
-#' @return numeric value indicating the average rule length of rules in the final model
-
-library(stringr)
+#' @description calculates the average rule lengths of the rules in the final model.
 
 average_rule_length <- function(rules){
   rule_lengths <- c()
@@ -402,10 +408,7 @@ average_rule_length <- function(rules){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @name imp_terms
-#' @description selects the n model terms with the greatest model coefficients
-#' @param model output of ExpertRuleFit$Model
-#' @param n integer indicting number of terms to select
-#' @return string vector indicating most important terms
+#' @description selects the n model terms with the greatest model coefficients indicating most important rules and linear terms.
 
 imp_terms <- function(model, n){
   largest_coefs <- sort(model[,2], decreasing = T)[1:n]
@@ -420,7 +423,7 @@ imp_terms <- function(model, n){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #' @name translate_out
-#' @description used at the end of the main function ExpertRuleFit to convert X[,xy] into the original variable names of the dataset X
+#' @description converts "X[,column position]" back to the original attribute names.
 
 translate_out <- function(X, expert_rules, removed_expertrules, 
                           confirmatory_terms, out){

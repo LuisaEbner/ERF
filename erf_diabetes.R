@@ -67,7 +67,7 @@ data <- prepare_diabetes_data(data)
 #    'Standards of Medical Care in Diabetes - 2019' 
 #    published by the American Diabetes Association
 
-opt_dk_rules1 <-  c("Age<=39 & BP<=80 & BMI<25",
+dk_rules1 <-  c("Age<=39 & BP<=80 & BMI<25",
                     "Age>=40 & Age<=49 & BP<=80 & BMI<25", 
                     "Age>=50 & Age<=59 & BP<=80 & BMI<25", 
                     "Age>=60 & BP<=80 & BMI<25", 
@@ -88,7 +88,17 @@ opt_dk_rules1 <-  c("Age<=39 & BP<=80 & BMI<25",
                     "Age<=39 & BP>=81 & BMI>=31 & BMI<=40", 
                     "Age>=40 & Age<=49 & BP>=81 & BMI>=31 & BMI<=40", 
                     "Age<=39 & BP<=80 & BMI>40", 
-                    "Age>=40 & Age<=49 & BP<=80 & BMI>40")
+                    "Age>=40 & Age<=49 & BP<=80 & BMI>40", 
+                    "Age>=60 & BP>=81 & BMI>=25 & BMI<=30",
+                    "Age>=60 & BP<=80 & BMI>=31 & BMI<=40",
+                    "Age>=50 & Age<=59 & BP>=81 & BMI>=31 & BMI<=40",
+                    "Age>=60 & BP>=81 & BMI>=31 & BMI<=40", 
+                    "Age>=50 & Age<=59 & BP<=80 & BMI>40", 
+                    "Age>=60 & BP<=80 & BMI>40", 
+                    "Age<=39 & BP>=81 & BMI>40", 
+                    "Age>=40 & Age<=49 & BP>=81 &  BMI>40", 
+                    "Age>=50 & Age<=59 &  BP>=81 & BMI>40", 
+                    "Age>=60 & BP>=81 & BMI>40")
 
 conf_dk_rules1 <- c("Age>=60 & BP>=81 & BMI>=25 & BMI<=30",
                     "Age>=60 & BP<=80 & BMI>=31 & BMI<=40",
@@ -106,7 +116,7 @@ conf_dk_rules1 <- c("Age>=60 & BP>=81 & BMI>=25 & BMI<=30",
 #    Nationale Versorgungs-Leitlinie Diabetes Mellitus Typ 2
 
 
-opt_dk_rules2 <- c("Glucose<=100", 
+dk_rules2 <- c("Glucose<=100", 
                    "Glucose>100 & Glucose<=110", 
                    "Glucose>110",
                    "BP<=85",
@@ -114,7 +124,11 @@ opt_dk_rules2 <- c("Glucose<=100",
                    "BP>90",
                    "BMI<=24",
                    "BMI<24 & BMI<=26", 
-                   "BMI>26")
+                   "BMI>26", 
+                   "Glucose>110 & BP>90",
+                   "Glucose>110 & BMI>26",
+                   "BP>90 & BMI>26",
+                   "Glucose>110 & BP>90 & BMI>26")
 
 conf_dk_rules2 <- c("Glucose>110 & BP>90",
                     "Glucose>110 & BMI>26",
@@ -124,9 +138,9 @@ conf_dk_rules2 <- c("Glucose>110 & BP>90",
 
 # Linear terms extracted from both guidelines
 
-opt_dk_linterms <- c("BP", "Glucose")
+linterms <- c("BP", "Glucose", "Age", "BMI", "DPF")
 
-conf_dk_linterms <- c("Age", "BMI", "DPF")
+conf_linterms <- c("Age", "BMI", "DPF")
 
 #===============================================================================
 #                         HEURISTIC EXPERT KNOWLEDGE
@@ -155,10 +169,8 @@ confirmatory_linterms <- conf_dk_linterms
 
 
 # Model
-erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
-                              expert_rules = optional_expert_rules, 
-                              confirmatory_rules = confirmatory_expert_rules,
-                              linterms = optional_linterms, 
-                              confirmatory_lins = confirmatory_linterms)
+erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest)
+
+
 
 

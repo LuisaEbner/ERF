@@ -84,14 +84,12 @@ source("create_test.R")
 ##'  \item{ClassErr}{returns the classification error evaluated on the test set.}
 
 
-ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL,
+ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                          name_rules = T, expert_rules = NULL, confirmatory_rules = NULL,
                          name_lins = T, linterms=NULL, confirmatory_lins = NULL,
-                         ntree=250, ensemble= "GBM", mix=0.5, L=3, S=6, minsup=.025, 
-                         intercept=T, corelim = 1, 
-                         alpha = 1,
-                         s = "lambda.min", standardize = F, n_imp = 10,
-                         print_output = T) {
+                         ntree=250, ensemble= "GBM", mix=0.5, L=3, S=6, minsup=.025, corelim = 1, 
+                         alpha = 1, s = "lambda.min", standardize = F,
+                         n_imp = 10, print_output = T) {
   
   
   # function input checks
