@@ -9,12 +9,9 @@ library(pre)
 library(purrr)
 library(rlist)
 
-# source external functions
+# external functions
 source('simulation_auxiliaries.R')
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Function
 
 #' @name create_simulation
 #' @description creates a data set including expert knowledge to apply the Expert-RuleFit model to

@@ -48,13 +48,14 @@ data <- prepare_cervicalcancer_data(data = data, balance = T)
 
 
 # Corresponding expert rules
-dk_rules1 <- c("STDsHPV==1",
-               "Smokes==1",
-               "(HIV+HepatitisB+AIDS)>=1",
-               "FirstSexualIntercourse<14",
-               "(((Age - FirstSexualIntercourse)*NumOfSexualPartners)/10)>4",
-               "(GenitalHerpes+MolluscumContagiosum+PelvicInflammatoryDisease+Syphilis)>=1", 
-               "HormonalContraceptivesYears>5")
+dk_rules1 <- c("STDs.HPV1 > 0.5", # STDs.HPV == 1
+               "Smoking1 > 0.5", #Smoking == 1
+               "(STDs.HIV+STDs.Hepatitis.B)>=1",
+               "First.sexual.intercourse<14",
+               "(((Age - First.sexual.intercourse)*Number.of.sexual.partners)/10)>4",
+               "(STDs.genital.herpes+STDs.molluscum.contagiosum+
+               STDs.pelvic.inflammatory.disease+STDs.syphilis)>=1", 
+               "Hormonal.Contraceptives..years.>5")
 
 
 
@@ -69,10 +70,10 @@ dk_rules1 <- c("STDsHPV==1",
 
 
 # Corresponding expert rules
-dk_rules2 <- c("FirstSexualIntercourse<18",
-               "Age<20 & NumOfPregnancies>=1",
-               "NumOfPregnancies>=3",
-               "IUD==1")
+dk_rules2 <- c("First.sexual.intercourse<18",
+               "Age<20 & Num.of.pregnancies>=1",
+               "Num.of.pregnancies>=3",
+               "Intra.uterine.device1 > 0.5") # Intra.uterine.device == 1
 
 
 # c) Linear Terms extracted from both guidelines
@@ -82,7 +83,7 @@ dk_rules2 <- c("FirstSexualIntercourse<18",
 # 2. number of sexual partners (ACS-CC)
 
 # Corresponding linear terms
-dk_lins <- c( "NumOfPregnancies", "NumOfSexualPartners") 
+dk_lins <- c( "Num.of.pregnancies", "Number.of.sexual.partners") 
 
 
 #===============================================================================
@@ -104,7 +105,7 @@ conf_rules <- dk_rules1
 
 # expert liner terms
 expert_linear_terms <- dk_lins
-conf_linear_terms <- c("NumOfPregnancies")
+conf_linear_terms <- c("Num.of.pregnancies")
 
 
 #===============================================================================
@@ -115,7 +116,8 @@ erf_cancer <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                             expert_rules = expert_rules, 
                             confirmatory_rules = conf_rules,
                             linterms = expert_linear_terms, 
-                            confirmatory_lins = conf_linear_terms)
+                            confirmatory_lins = conf_linear_terms, 
+                            print_output = T)
 
 
 

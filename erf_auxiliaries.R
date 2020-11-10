@@ -54,10 +54,9 @@ create_X_y_Xtest_ytest <- function(data, train_frac, pos_class = 1,
   
   # split training- and test data
   set.seed(45)
-  sample <- sample.int(n = nrow(data),
-                       size = floor(train_frac*nrow(data)), replace = F)
-  train <- data[sample, ]
-  test  <- data[-sample, ]
+  train.index <- createDataPartition(data$y, p = train_frac, list = FALSE)
+  train <- data[ train.index,]
+  test  <- data[-train.index,]
   
   # convert data frame into matrix, remove target attribute
   X <- model.matrix(y ~., train)[,-1]
@@ -90,6 +89,8 @@ names_to_positions <- function(X, name_rules){
   iteration <- 0
   
   pos_rules <- c()
+  
+  if(length(name_rules) != 0){
   for (j in 1:length(name_rules)){
     for (k in 1:length(names)){
       if(grepl(names[k],name_rules[j], fixed = T)){
@@ -109,6 +110,8 @@ names_to_positions <- function(X, name_rules){
         }
       }
     }
+  }
+    
   }
   pos_rules
 }
@@ -133,14 +136,15 @@ positions_to_names <- function(X, pos_rules){
   iteration <- 0
   
   name_rules <- c()
-  for (j in 1:length(pos_rules)){
-    for (k in 1:length(positions)){
-      if(grepl(positions[k],pos_rules[j], fixed = T)){
-        name_rules[j] <- gsub(positions[k], names[k], pos_rules[j], fixed = T)
+  
+  if(length(pos_rules) != 0){
+    for (j in 1:length(pos_rules)){
+      for (k in 1:length(positions)){
+        if(grepl(positions[k],pos_rules[j], fixed = T)){
+          name_rules[j] <- gsub(positions[k], names[k], pos_rules[j], fixed = T)
+        }
       }
     }
-  }
-  
   
   while(bool){
     bool <- F
@@ -153,6 +157,9 @@ positions_to_names <- function(X, pos_rules){
       }
     }
   }
+
+  }
+  
   name_rules
 }
 
@@ -169,12 +176,16 @@ names_to_numbers <- function(X, variable_names){
   positions <- 1:ncol(X)
   
   num_variables <- c()
+  
+  if(length(variable_names) != 0){
   for (j in 1:length(variable_names)){
     for (k in 1:length(names)){
       if(names[k] == variable_names[j]){
         num_variables[j] <- gsub(names[k], positions[k], variable_names[j], fixed = T)
       }
     }
+  }
+    
   }
   as.numeric(num_variables)
 }

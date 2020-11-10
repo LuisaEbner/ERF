@@ -34,14 +34,14 @@ source("erf_main.R")
 #                               SIMULATION
 #===============================================================================
 
-simulation <- create_simulation(n_vars = 20, n_obs = 1000,
+simulation <- create_simulation(n_vars = 100, n_obs = 300,
                                 mu = 0, sigma = 1, 
                                 n_rule_vars = 10, 
-                                n_rel_rules = 5, 
-                                optional_lengths = c(1, 2),
-                                weights = c(1/2, 1/2),
+                                n_rel_rules = 20, 
+                                optional_lengths = c(1, 2, 3),
+                                weights = c(1/3, 1/3, 1/3),
                                 mu_beta = 0, sigma_beta = 5, 
-                                mu_epsilon = 0, sigma_epsilon = 0.025)
+                                mu_epsilon = 0, sigma_epsilon = 0.001)
 
 #===============================================================================
 #                                 DATA 
@@ -67,7 +67,6 @@ expert_rules <- simulation[[3]]
 #===============================================================================
 
 erf_sim <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest, name_rules = F,
-                          expert_rules = expert_rules,
-                          confirmatory_rules = expert_rules)
+                          expert_rules = expert_rules, n_imp = 5)
 
 

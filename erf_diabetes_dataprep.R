@@ -1,10 +1,9 @@
 ################################################################################
+#                                                                              #
+#          Training Data Preparation - Pima Indian Diabetes                    #
+#                                                                              #
 ################################################################################
-###                                                                          ###
-###          Training Data Preparation - Pima Indian Diabetes                ###
-###                                                                          ###
-################################################################################
-################################################################################
+
 
 # Libraries
 library(mice)
@@ -41,6 +40,9 @@ prepare_diabetes_data <- function(data, imp_method = "rf"){
   data$SkinThickness <- mice_complete$SkinThickness
   data$Insulin <- mice_complete$Insulin
   
+  # turn binary target into factor
+  data$Outcome <- as.factor(data$Outcome)
+  
   return(data)
 }
 
@@ -49,3 +51,4 @@ prepare_diabetes_data <- function(data, imp_method = "rf"){
 # EXAMPLE
 # data <- read.csv(file = 'diabetes.csv', header = T)
 # data <- prepare_diabetes_data(data)
+# str(data)
