@@ -6,9 +6,23 @@
 ################################################################################
 ################################################################################
 
+# Libraries
+library(dplyr)
+library(pre)
+library(glmnet)
+library(xgboost)
+library(RCurl)
+library(xrf)
+library(pROC)
+library(ROCit)
+library(ROCR)
+library(mice)
+
 # External functions
 source("erf_cancer_dataprep.R")
 source("erf_main.R")
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # 1. Information Sources
 
@@ -18,8 +32,13 @@ source("erf_main.R")
 
 # 2. ERF Model
 
+# 2.1. Model input
+# 2.2. Model application
+
+# 3. Model Comparisons
+
 #===============================================================================
-#                             1.1. Training data
+#                             1.1. TRAINING DATA
 #===============================================================================
 
 # Cervical Cancer (Risk Factors) dataset available from the UCI ML Repository
@@ -30,7 +49,7 @@ data <- prepare_cervicalcancer_data(data = data, balance = T)
 
 
 #===============================================================================
-#            1.2. Factual domain knowledge from medical guidelines
+#                        1.2. FACTUAL DOMAIN KNOWLEDGE
 #===============================================================================
 
 # a) Rules extracted from Chapter 3.4, Risk Factors and Disease Development
@@ -48,9 +67,10 @@ data <- prepare_cervicalcancer_data(data = data, balance = T)
 
 
 # Corresponding expert rules
-dk_rules1 <- c("STDs.HPV1 > 0.5", # STDs.HPV == 1
-               "Smoking1 > 0.5", #Smoking == 1
-               "(STDs.HIV+STDs.Hepatitis.B)>=1",
+dk_rules1 <- c("STDs.HPV == 1", # STDs.HPV == 1
+               "Smoking ==1 ", #Smoking == 1
+               "STDs.HIV == 1",
+               "STDs.Hepatitis.B == 1",
                "First.sexual.intercourse<14",
                "(((Age - First.sexual.intercourse)*Number.of.sexual.partners)/10)>4",
                "(STDs.genital.herpes+STDs.molluscum.contagiosum+
@@ -73,7 +93,7 @@ dk_rules1 <- c("STDs.HPV1 > 0.5", # STDs.HPV == 1
 dk_rules2 <- c("First.sexual.intercourse<18",
                "Age<20 & Num.of.pregnancies>=1",
                "Num.of.pregnancies>=3",
-               "Intra.uterine.device1 > 0.5") # Intra.uterine.device == 1
+               "Intra.uterine.device == 1")
 
 
 # c) Linear Terms extracted from both guidelines
@@ -83,42 +103,112 @@ dk_rules2 <- c("First.sexual.intercourse<18",
 # 2. number of sexual partners (ACS-CC)
 
 # Corresponding linear terms
-dk_lins <- c( "Num.of.pregnancies", "Number.of.sexual.partners") 
+dk_lins <- c( "Num.of.pregnancies", "Number.of.sexual.partners",
+              "Age",  "First.sexual.intercourse", 
+              "Hormonal.Contraceptives..years.") 
 
 
 #===============================================================================
 #                        1.3. HEURISTIC EXPERT KNOWLEDGE
 #===============================================================================
 
-# Data Input
+# interview information following
+
+#===============================================================================
+#                               2. ERF MODEL
+#===============================================================================
+#                             2.1. MODEL INPUT
+#===============================================================================
+
+# a) Training data
 sets <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)
 X <- sets[[1]]
 y <- sets[[2]]
 Xtest <- sets[[3]]
 ytest <- sets[[4]]
 
-# EK Input
 
-# (optional) expert rules
-expert_rules <- c(dk_rules1, dk_rules2)
-conf_rules <- dk_rules1
+# b) Expert Rules
+conf_dk_rules1 <- support_take(dk_rules1, data, 0.05)
+conf_dk_rules1
+opt_dk_rules1 <- setdiff(dk_rules1, conf_dk_rules1)
 
-# expert liner terms
-expert_linear_terms <- dk_lins
-conf_linear_terms <- c("Num.of.pregnancies")
+conf_dk_rules2 <- support_take(dk_rules2, data, 0.05)
+conf_dk_rules2
+opt_dk_rules2 <- setdiff(dk_rules2, conf_dk_rules2)
 
+optional_rules <- c(opt_dk_rules1, opt_dk_rules2)
+confirmatory_rules <- c(conf_dk_rules1, conf_dk_rules2)
+
+# c) Expert Linear Terms
+optional_linears <- dk_lins
 
 #===============================================================================
-#                               2. ERF MODEL
+#                         2.2. Model Application
 #===============================================================================
+
 
 erf_cancer <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
-                            expert_rules = expert_rules, 
-                            confirmatory_rules = conf_rules,
-                            linterms = expert_linear_terms, 
-                            confirmatory_lins = conf_linear_terms, 
-                            print_output = T)
+                              optional_expert_rules = optional_rules, 
+                              confirmatory_expert_rules = confirmatory_rules,  
+                              optional_linear_terms=optional_linears,
+                              corelim = 0.9)
 
+
+#===============================================================================
+#                        3. MODEL COMPARISONS
+#===============================================================================
+
+# a) ExpertRuleFit  w.o. expert knowledge
+rf_cancer <- ExpertRuleFit(X, y, Xtest, ytest, print_output = F)
+
+# Complexity
+rf_cancer$NTerms 
+rf_cancer$AvgRuleLength 
+
+# Accuracy 
+rf_cancer$AUC
+rf_cancer$ClassErr
+
+# Important features
+rf_cancer$ImportantFeatures
+
+#-------------------------------------------------------------------------------
+
+# b) ERF Alternative: Prediction Rule Ensembles (pre package)
+
+#pre(formula, data, family = "binomial", use.grad = TRUE,
+#    tree.unbiased = TRUE, type = "both", sampfrac = 0.5, maxdepth = 3L,
+#    learnrate = .01, confirmatory = NULL, mtry = Inf, ntrees = 500,
+#    tree.control, removeduplicates = TRUE, removecomplements = TRUE,
+#    winsfrac = 0.025, normalize = TRUE, standardize = FALSE,
+#    ordinal = TRUE, nfolds = 10L, verbose = FALSE, par.init = FALSE,
+#    par.final = FALSE, ...)
+
+# Input
+train <- cbind.data.frame(X, y)
+test <- cbind.data.frame(Xtest, ytest)
+
+# Model
+pre_cancer <- pre(y ~ ., data = train , family = "binomial", 
+                  type = "rules", ntrees = 250)
+
+# Complexity
+rel_coefs <- coef(pre_cancer)$coefficient[coef(pre_cancer)$coefficient != 0] 
+nterms <- length(rel_coefs) 
+
+rules <- rel_coefs$description[1:nterms]
+avgrulelength <- average_rule_length(rules) 
+
+# Accuracy
+preds <- predict(pre_cancer, newdata = test, type = "class")
+auc <-  auc(ytest, as.integer(preds)) 
+ce <-   ce(ytest, as.integer(preds)) 
+
+# Important features 
+impfeatures <- rules[1:10] 
+
+#===============================================================================
 
 
 
