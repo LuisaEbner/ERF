@@ -1,4 +1,5 @@
 # auxiliary function used in ExpertRuleFit
+# implemented by Malte Nalenz
 
 take1 = function(len) {
   draw = c()

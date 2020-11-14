@@ -7,8 +7,6 @@
 ################################################################################
 
 # External functions
-setwd("C:/Users/ebner/Documents/MasterArbeit/ExpertRuleFit")
-
 source("erf_diabetes_dataprep.R")
 source("erf_main.R")
 
@@ -40,7 +38,7 @@ data <- prepare_diabetes_data(data)
 #    'Standards of Medical Care in Diabetes - 2019' 
 #    published by the American Diabetes Association
 
-opt_dk_rules1 <-  c("Age<=39 & BP<=80 & BMI<25",
+all_dk_rules1 <-  c("Age<=39 & BP<=80 & BMI<25",
                     "Age>=40 & Age<=49 & BP<=80 & BMI<25", 
                     "Age>=50 & Age<=59 & BP<=80 & BMI<25", 
                     "Age>=60 & BP<=80 & BMI<25", 
@@ -61,9 +59,8 @@ opt_dk_rules1 <-  c("Age<=39 & BP<=80 & BMI<25",
                     "Age<=39 & BP>=81 & BMI>=31 & BMI<=40", 
                     "Age>=40 & Age<=49 & BP>=81 & BMI>=31 & BMI<=40", 
                     "Age<=39 & BP<=80 & BMI>40", 
-                    "Age>=40 & Age<=49 & BP<=80 & BMI>40")
-
-conf_dk_rules1 <- c("Age>=60 & BP>=81 & BMI>=25 & BMI<=30",
+                    "Age>=40 & Age<=49 & BP<=80 & BMI>40",
+                    "Age>=60 & BP>=81 & BMI>=25 & BMI<=30",
                     "Age>=60 & BP<=80 & BMI>=31 & BMI<=40",
                     "Age>=50 & Age<=59 & BP>=81 & BMI>=31 & BMI<=40",
                     "Age>=60 & BP>=81 & BMI>=31 & BMI<=40", 
@@ -78,8 +75,7 @@ conf_dk_rules1 <- c("Age>=60 & BP>=81 & BMI>=25 & BMI<=30",
 # 2. Rules Extracted from Chapter 3, Therapeutic Goals of the
 #    Nationale Versorgungs-Leitlinie Diabetes Mellitus Typ 2
 
-
-opt_dk_rules2 <- c("Glucose<=100", 
+all_dk_rules2 <- c("Glucose<=100", 
                    "Glucose>100 & Glucose<=110", 
                    "Glucose>110",
                    "BP<=85",
@@ -87,25 +83,22 @@ opt_dk_rules2 <- c("Glucose<=100",
                    "BP>90",
                    "BMI<=24",
                    "BMI<24 & BMI<=26", 
-                   "BMI>26")
-
-conf_dk_rules2 <- c("Glucose>110 & BP>90",
-                    "Glucose>110 & BMI>26",
-                    "BP>90 & BMI>26",
-                    "Glucose>110 & BP>90 & BMI>26")
+                   "BMI>26", 
+                   "Glucose>110 & BP>90",
+                   "Glucose>110 & BMI>26",
+                   "BP>90 & BMI>26",
+                   "Glucose>110 & BP>90 & BMI>26")
 
 
 # Linear terms extracted from both guidelines
 
-opt_dk_linterms <- c("BP", "Glucose")
-
-conf_dk_linterms <- c("Age", "BMI", "DPF")
+opt_dk_lins12 <- c("BP", "Glucose")
+conf_dk_lins12 <- c("Age", "BMI", "DPF")
 
 #===============================================================================
 #                         HEURISTIC EXPERT KNOWLEDGE
 #===============================================================================
 
-ek_rules1 <- c()
 
 #===============================================================================
 #                          EXPERT RULEFIT MODEL
@@ -118,18 +111,34 @@ y <- sets[[2]]
 Xtest <- sets[[3]]
 ytest <- sets[[4]]
 
-# Expert Knowledge Input
-optional_expert_rules <- c(opt_dk_rules1, opt_dk_rules2)
-confirmatory_expert_rules <- c(conf_dk_rules1, conf_dk_rules2)
+# EK Rules
+conf_dk_rules1 <- support_take(all_dk_rules1, data, 0.05)
+conf_dk_rules1
+opt_dk_rules1 <- setdiff(all_dk_rules1, conf_dk_rules1)
 
-optional_linterms <- opt_dk_linterms
-confirmatory_linterms <- conf_dk_linterms
+conf_dk_rules2 <- support_take(all_dk_rules2, data, 0.05)
+opt_dk_rules2 <- setdiff(all_dk_rules2, conf_dk_rules2)
+
+optional_rules <- c(opt_dk_rules1, opt_dk_rules2)
+confirmatory_rules <- c(conf_dk_rules1, conf_dk_rules2)
 
 
+# EK Linear Terms
+optional_linears <- c("BP", "Glucose")
+confirmatory_linears <- c("Age", "BMI", "DPF")
 
-# Model
+#===============================================================================
+
 erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
-                              expert_rules = c(optional_expert_rules, confirmatory_expert_rules), 
-                              confirmatory_rules = confirmatory_expert_rules,
-                              linterms = c(optional_linterms, confirmatory_linterms),
-                              confirmatory_lins = confirmatory_linterms)
+                              optional_expert_rules = optional_rules, 
+                              confirmatory_expert_rules = confirmatory_rules,  
+                              optional_linear_terms=optional_linears,
+                              confirmatory_linear_terms = confirmatory_linears, 
+                              corelim = 0.9)
+
+# rf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest)
+
+
+
+
+

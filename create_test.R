@@ -1,4 +1,5 @@
 # auxiliary function used in main function ExpertRuleFit
+# implemented by Malte Nalenz
 
 createXtest = function(X, rules) {
   Xr = matrix(0, nrow=dim(X)[1], ncol=length(rules))

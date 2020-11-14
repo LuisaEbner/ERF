@@ -9,6 +9,7 @@
 # Libraries
 library(caret)
 library(stringr)
+library(dplyr)
 
 
 # Functions
@@ -18,11 +19,10 @@ library(stringr)
 # 4. names_to_numbers
 # 5. regularized_regression
 # 6. regr_output
-# 7. expert_occurences
-# 8. expert_output
-# 9. avergage_rule_length
-# 10. imp_terms
-# 11. translate_out
+# 7. expert_output
+# 8. avergage_rule_length
+# 9. imp_terms
+# 10. translate_out
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -91,26 +91,30 @@ names_to_positions <- function(X, name_rules){
   pos_rules <- c()
   
   if(length(name_rules) != 0){
-  for (j in 1:length(name_rules)){
-    for (k in 1:length(names)){
-      if(grepl(names[k],name_rules[j], fixed = T)){
-        pos_rules[j] <- gsub(names[k], positions[k], name_rules[j], fixed = T)
-      }
-    }
-  }
-  
-  
-  while(bool){
-    bool <- F
-    for (j in 1:length(pos_rules)){
+    for (j in 1:length(name_rules)){
       for (k in 1:length(names)){
-        if(grepl(names[k],pos_rules[j], fixed = T)){
-          bool <- T
-          pos_rules[j] <- gsub(names[k], positions[k], pos_rules[j], fixed = T)
+        if(length(name_rules[j]) > 0){
+          if(grepl(names[k],name_rules[j], fixed = T)){
+            pos_rules[j] <- gsub(names[k], positions[k], name_rules[j], fixed = T)
+          }
         }
       }
     }
-  }
+    
+    
+    while(bool){
+      bool <- F
+      for (j in 1:length(pos_rules)){
+        for (k in 1:length(names)){
+          if(length(pos_rules[j]) > 0){
+            if(grepl(names[k],pos_rules[j], fixed = T)){
+              bool <- T
+              pos_rules[j] <- gsub(names[k], positions[k], pos_rules[j], fixed = T)
+            }
+          }
+        }
+      }
+    }
     
   }
   pos_rules
@@ -140,24 +144,28 @@ positions_to_names <- function(X, pos_rules){
   if(length(pos_rules) != 0){
     for (j in 1:length(pos_rules)){
       for (k in 1:length(positions)){
-        if(grepl(positions[k],pos_rules[j], fixed = T)){
-          name_rules[j] <- gsub(positions[k], names[k], pos_rules[j], fixed = T)
+        if(length(pos_rules[j]) > 0){
+          if(grepl(positions[k], pos_rules[j], fixed = T)){
+            name_rules[j] <- gsub(positions[k], names[k], pos_rules[j], fixed = T)
+          }
         }
       }
     }
-  
-  while(bool){
-    bool <- F
-    for (j in 1:length(name_rules)){
-      for (k in 1:length(positions)){
-        if(grepl(positions[k],name_rules[j], fixed = T)){
-          bool <- T
-          name_rules[j] <- gsub(positions[k], names[k], name_rules[j], fixed = T)
+    
+    while(bool){
+      bool <- F
+      for (j in 1:length(name_rules)){
+        for (k in 1:length(positions)){
+          if(length(name_rules[j]) > 0){
+            if(grepl(positions[k],name_rules[j], fixed = T)){
+              bool <- T
+              name_rules[j] <- gsub(positions[k], names[k], name_rules[j], fixed = T)
+            }
+          }
         }
       }
     }
-  }
-
+    
   }
   
   name_rules
@@ -178,13 +186,13 @@ names_to_numbers <- function(X, variable_names){
   num_variables <- c()
   
   if(length(variable_names) != 0){
-  for (j in 1:length(variable_names)){
-    for (k in 1:length(names)){
-      if(names[k] == variable_names[j]){
-        num_variables[j] <- gsub(names[k], positions[k], variable_names[j], fixed = T)
+    for (j in 1:length(variable_names)){
+      for (k in 1:length(names)){
+        if(names[k] == variable_names[j]){
+          num_variables[j] <- gsub(names[k], positions[k], variable_names[j], fixed = T)
+        }
       }
     }
-  }
     
   }
   as.numeric(num_variables)
@@ -221,7 +229,6 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                                    alpha = 1, standardize = F, 
                                    n = 5, print_output = T){
   
-  set.seed(123) 
   
   # define penalties according to confirmatory columns
   if(length(confirmatory_cols) == 0){
@@ -249,28 +256,27 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   # attribute coefficients
   coefs <- coef(fit, s=lambda)
   
-  # non-zero coefficients
-  coefs[which(coefs != 0 ) ] 
-  coefs@Dimnames[[1]][which(coefs != 0 ) ]  
   
   # number of non-zero coefficients (= number of terms/features)
   n_terms = length(coefs[which(coefs != 0 ) ] - 1)
   
-  Results <- data.frame( features = coefs@Dimnames[[1]][ which(coefs != 0 ) ], 
+  Results <- data.frame( features = coefs@Dimnames[[1]][which(coefs != 0 ) ], 
                          coefficients    = coefs       [ which(coefs != 0 ) ]
   )
   
+  #Results$features <- positions_to_names(X, Results$features)
   
   # Average rule length
   avgrl <- average_rule_length(Results$features)
+  
   
   # Feature importance
   important_terms <- imp_terms(Results, n)
   
   if (is.null(Xtest) == T) {
-    result <- list(Results = Results, s = s, n_terms = n_terms,
-                   lambda =lambda, PenFac = p.fac, AvgRuleLength = avgrl, 
-                   ImpTerms = important_terms)
+    result <- list(Results = Results, s = s, NTerms = n_terms,
+                   lambda =lambda, PenaltyFactor = p.fac, AvgRuleLength = avgrl, 
+                   ImpFeatures = important_terms)
     
   } else{
     pred_prob <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "response")
@@ -281,10 +287,11 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
     ce <-   ce(ytest, as.integer(pred_class))
     
     result <- list(Results = Results, s = s,
-                   n_terms = n_terms, lambda =lambda, 
-                   Conf_Mat = conf_mat, AUC = auc, CE = ce, PenFac = p.fac,
+                   NTerms = n_terms, lambda =lambda, 
+                   ConfusionMatrix = conf_mat, AUC = auc, CE = ce, PenaltyFactor = p.fac,
                    Predictions = predictions, AvgRuleLength = avgrl,
-                   ImpTerms = important_terms)
+                   ImpFeatures = important_terms)
+    
   }
   result
 }
@@ -295,60 +302,33 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
 #' @description  prints the function output of 'regularized regression'.
 
 
-regr_output <- function(X, Xtest, name_rules, regmodel){
-  cat(sprintf("Final ensemble with 10 fold CV error with s = %s\n", regmodel$s))
+regr_output <- function(X, Xtest, regmodel){
+  cat(sprintf("Final Expert RuleFit ensemble - Model & Results Overview"))
   cat(sprintf("\n"))
-  cat(sprintf("Lambda = %f \n", regmodel$lambda))
-  cat(sprintf("Number of terms = %d \n", regmodel$n_terms))
-  cat(sprintf("Average rule length = %#.4f \n", regmodel$AvgRuleLength))
   cat(sprintf("\n"))
-  cat(sprintf("Regularized logistic regression model: \n"))
-  cat(sprintf("\n"))
-  if(name_rules == T){
-    regmodel$Results$features <- positions_to_names(X, regmodel$Results$features)
-  } 
-  print(regmodel$Results)
-  cat(sprintf("\n"))
-  cat(sprintf(" Most important features:\n"))
-  cat(sprintf("\n"))
-  if(name_rules == T){
-    regmodel$ImpTerms <- positions_to_names(X, regmodel$ImpTerms)
-  }
-  print(regmodel$ImpTerms)
+  cat(sprintf("Lambda: %f \n", regmodel$lambda))
+  cat(sprintf("Number of terms: %d \n", regmodel$NTerms))
+  cat(sprintf("Average rule length: %#.4f \n", regmodel$AvgRuleLength))
   cat(sprintf("\n"))
   if (is.null(Xtest) == F){
     cat(sprintf("Confusion matrix: \n"))
     cat(sprintf("\n"))
-    print(regmodel$Conf_Mat)
+    print(regmodel$ConfusionMatrix)
     cat(sprintf("\n"))
-    cat(sprintf("AUC = %#.4f \n\n", regmodel$AUC))
-    cat(sprintf("Classification error = %#.4f \n", regmodel$CE))
+    cat(sprintf("AUC: %#.4f \n\n", regmodel$AUC))
+    cat(sprintf("Classification error: %#.4f \n", regmodel$CE))
     cat(sprintf("\n"))
   }
-}
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#' @title expert_occurences
-#' @description calculates the proportion of expert knowledge that entered the final ERF model.
-
-expert_occurences <- function(expert_rules, confirmatory_lins, model_features){
-  ek <- c(expert_rules, confirmatory_lins)
-  n_ek <- length(ek)
-  
-  # counter for expert rules in the final model
-  ek_in = 0
-  
-  if(n_ek > 0){
-    for (i in 1:n_ek){
-      if(ek[i] %in% model_features){
-        ek_in = ek_in + 1
-      }
-    }
-    prop_ek <- ek_in/n_ek
-  } else{
-    prop_ek <- 0
-  }
+  cat(sprintf("Regularized logistic regression model: \n"))
+  cat(sprintf("\n"))
+  regmodel$Results$features <- positions_to_names(X, regmodel$Results$features)
+  print(regmodel$Results)
+  cat(sprintf("\n"))
+  cat(sprintf("Most important features:\n"))
+  cat(sprintf("\n"))
+  regmodel$ImpFeatures <- positions_to_names(X, regmodel$ImpFeatures)
+  print(regmodel$ImpFeatures)
+  cat(sprintf("\n"))
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -357,50 +337,67 @@ expert_occurences <- function(expert_rules, confirmatory_lins, model_features){
 #' @description  prints an information summary on expert knowledge that entered the final ERF model.
 
 
-expert_output <- function(X, name_rules = T, name_lins = T, expert_rules,
-                          removed_expertrules,
-                          confirmatory_lins, prop_ek){
-  cat(sprintf("All expert rules: \n"))
+expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp, 
+                          prop_ek_imp, all_opt_ek, all_conf_ek, removed_ek, 
+                          prop_opt_ek, prop_all_ek){
+  
   cat(sprintf("\n"))
-  if (!(is.null(expert_rules))){
-    if(name_rules == T){
-      print(positions_to_names(X, expert_rules))
-    } else{
-      print(expert_rules)
-    }
+  cat(sprintf("a) Among them optional expert knowledge (EK): \n"))
+  if(!(is.null(opt_ek_imp))| !(is.null(corr_ek_imp))){
+    print(opt_ek_imp, corr_ek_imp)
   } else {
     print("None.")
   }
   
   cat(sprintf("\n"))
-  cat(sprintf("Expert rules removed due to low support or correlation withother rules in the model: \n"))
-  cat(sprintf("\n"))
-  if(!(is.null(removed_expertrules))){
-    if(name_rules == T){
-      print(positions_to_names(X, removed_expertrules))
-    }else{
-      print(removed_expertrules)
-    }
+  cat(sprintf("b) Among them confirmatory EK: \n"))
+  if(!(is.null(conf_ek_imp))){
+    print(conf_ek_imp)
   } else {
     print("None.")
   }
   
   cat(sprintf("\n"))
-  cat(sprintf("Expert Linear terms: \n"))
-  if(!(is.null(confirmatory_lins))){
-    if(name_lins == T){
-      print(positions_to_names(X, confirmatory_lins))
-    } else{
-      print(confirmatory_lins)
-    }
+  cat(sprintf("-> Proportion of EK among the %#.0f most important features :  %#.4f \n", n_imp, prop_ek_imp))
+  
+  cat(sprintf("\n"))
+  cat(sprintf("All EK in the final model: \n"))
+  cat(sprintf("a) Optional: \n"))
+  cat(sprintf("\n"))
+  if (!(is.null(all_opt_ek))){
+    print(all_opt_ek) 
+  } else {
+    print("None.")
+  }
+  cat(sprintf("\n"))
+  cat(sprintf("b) Confirmatory: \n"))
+  cat(sprintf("\n"))
+  if (!(is.null(all_conf_ek))){
+    print(all_conf_ek) 
+  } else {
+    print("None.")
+  }
+  cat(sprintf("\n"))
+  
+  
+  cat(sprintf("\n"))
+  cat(sprintf("EK removed due to too low/high support: \n"))
+  cat(sprintf("\n"))
+  if(!(is.null(removed_ek))){
+    print(removed_ek)
   } else {
     print("None.")
   }
   
+  
   cat(sprintf("\n"))
-  cat(sprintf("Proportion of expert knowledge in the final model:  %#.4f \n", prop_ek))
+  cat(sprintf("Proportion of optional EK in the final model:  %#.4f \n", prop_opt_ek))
+  
+  cat(sprintf("\n"))
+  cat(sprintf("Proportion of EK in the final model (overall):  %#.4f \n", prop_all_ek))
   
 } 
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -433,24 +430,65 @@ imp_terms <- function(model, n){
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#' @name translate_out
-#' @description converts "X[,column position]" back to the original attribute names.
 
-translate_out <- function(X, expert_rules, removed_expertrules, 
-                          confirmatory_terms, out){
-  
-  colnames(out$Train) <- positions_to_names(X, colnames(out$Train))
-  colnames(out$Test) <- positions_to_names(X, colnames(out$Test))
-  out$Features <- positions_to_names(X, out$Features)
-  out$ImpTerms <- positions_to_names(X, out$ImpTerms)
-  if(!(is.null(expert_rules))){
-    out$ExpertRules <- positions_to_names(X, out$ExpertRules) 
+
+contains <- function(ek, final_terms){
+  ek_contained <- c()
+  if(length(ek)>0){
+    for (i in 1:length(ek)){
+      if(ek[i] %in% final_terms){
+        ek_contained <- c(ek_contained, ek[i])
+      }
+    }
   }
-  if(!(is.null(removed_expertrules))){
-    out$RemovedExpertRules <- positions_to_names(X, out$RemovedExpertRules) 
+  ek_contained
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+not_contained <- function(string_vec1, string_vec2){
+  uncommon_vec <- c()
+  if(length(string_vec1)>0){
+    for (i in 1:length(string_vec1)){
+      if(!(string_vec1[i] %in% string_vec2)){
+        uncommon_vec <- c(uncommon_vec, string_vec1[i])
+      }
+    }
   }
-  if(!(is.null(confirmatory_terms))){
-    out$ConfTerms <- positions_to_names(X, out$ConfTerms) 
+  uncommon_vec
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+support_remove <- function(rules, data, minsup){
+  sup_vals <- c()
+  if(length(rules) > 0){
+    for(i in 1:length(rules)){
+      sup_vals <- c(sup_vals, nrow(data %>% filter(eval(str2expression(rules[i]))))/nrow(data))
+    }
+  sup_frame <- data.frame(rules = rules, support_values = sup_vals)
+  sup_frame1 <- sup_frame %>% filter(support_values <= minsup)
+  sup_frame2 <- sup_frame %>% filter(support_values >= (1-minsup))
+  out <- (rbind.data.frame(sup_frame1, sup_frame2))$rules
+  } else {
+    out = "None."
   }
   out
 }
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+support_take <- function(rules, data, minsup){
+  sup_vals <- c()
+  if(length(rules) > 0){
+    for(i in 1:length(rules)){
+      sup_vals <- c(sup_vals, nrow(data %>% filter(eval(str2expression(rules[i]))))/nrow(data))
+    }
+  }
+  sup_frame <- data.frame(rules = rules, support_values = sup_vals)
+  sup_frame <- sup_frame %>% filter((support_values > minsup) & support_values < (1-minsup))
+  out <- sup_frame$rules
+  out
+}
+
+
