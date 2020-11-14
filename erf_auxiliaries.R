@@ -17,12 +17,14 @@ library(dplyr)
 # 2. names_to_positions
 # 3. positions_to_names
 # 4. names_to_numbers
-# 5. regularized_regression
-# 6. regr_output
-# 7. expert_output
-# 8. avergage_rule_length
-# 9. imp_terms
-# 10. translate_out
+# 5. avergage_rule_length
+# 6. imp_terms
+# 7. regularized_regression
+# 8. regression_output
+# 9. expert_output
+# 10. contains
+# 11. support_remove
+# 12. support_take
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -75,10 +77,10 @@ create_X_y_Xtest_ytest <- function(data, train_frac, pos_class = 1,
 #'@name names_to_positions
 #'@description replaces the name of predictor attributes with their column position.
 #'@param X data frame of predictor attributes
-#'@param name_rules vector of expert rules using the original attribute names
-#'@return vector of expert rules using X[,column position] referring to predictor attributes
+#'@param name_strings vector of strings with rules or linear terms using the original attribute names
+#'@return vector of strings with rules or linear terms using X[,column position] referring to predictor attributes
 
-names_to_positions <- function(X, name_rules){
+names_to_positions <- function(X, name_strings){
   names <- colnames(X)
   positions <- c()
   for (i in 1:ncol(X)){
@@ -88,14 +90,14 @@ names_to_positions <- function(X, name_rules){
   bool <- T
   iteration <- 0
   
-  pos_rules <- c()
+  pos_strings <- c()
   
-  if(length(name_rules) != 0){
-    for (j in 1:length(name_rules)){
+  if(length(name_strings) > 0){
+    for (j in 1:length(name_strings)){
       for (k in 1:length(names)){
-        if(length(name_rules[j]) > 0){
-          if(grepl(names[k],name_rules[j], fixed = T)){
-            pos_rules[j] <- gsub(names[k], positions[k], name_rules[j], fixed = T)
+        if(length(name_strings[j]) > 0){
+          if(grepl(names[k],name_strings[j], fixed = T)){
+            pos_strings[j] <- gsub(names[k], positions[k], name_strings[j], fixed = T)
           }
         }
       }
@@ -104,12 +106,12 @@ names_to_positions <- function(X, name_rules){
     
     while(bool){
       bool <- F
-      for (j in 1:length(pos_rules)){
+      for (j in 1:length(pos_strings)){
         for (k in 1:length(names)){
-          if(length(pos_rules[j]) > 0){
-            if(grepl(names[k],pos_rules[j], fixed = T)){
+          if(length(pos_strings[j]) > 0){
+            if(grepl(names[k],pos_strings[j], fixed = T)){
               bool <- T
-              pos_rules[j] <- gsub(names[k], positions[k], pos_rules[j], fixed = T)
+              pos_strings[j] <- gsub(names[k], positions[k], pos_strings[j], fixed = T)
             }
           }
         }
@@ -117,7 +119,7 @@ names_to_positions <- function(X, name_rules){
     }
     
   }
-  pos_rules
+  pos_strings
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,11 +127,11 @@ names_to_positions <- function(X, name_rules){
 #'@name positions_to_names
 #'@description  replaces the column positions of predictor attributes with their names.
 #'@param X data frame of predictor attributes
-#'@param pos_rules vector of expert rules using X[,column position] referring to predictor attributes
-#'@return vector of expert rules using the original attribute names
+#'@param pos_strings vector strings with rules or linear terms using the X[,column position] referring to predictor attributes
+#'@return vector of strings with rules or linear terms using the original attribute names
 
 
-positions_to_names <- function(X, pos_rules){
+positions_to_names <- function(X, pos_strings){
   names <- colnames(X)
   positions <- c()
   for (i in 1:ncol(X)){
@@ -139,14 +141,14 @@ positions_to_names <- function(X, pos_rules){
   bool <- T
   iteration <- 0
   
-  name_rules <- c()
+  name_strings <- c()
   
-  if(length(pos_rules) != 0){
-    for (j in 1:length(pos_rules)){
+  if(length(pos_strings) != 0){
+    for (j in 1:length(pos_strings)){
       for (k in 1:length(positions)){
-        if(length(pos_rules[j]) > 0){
-          if(grepl(positions[k], pos_rules[j], fixed = T)){
-            name_rules[j] <- gsub(positions[k], names[k], pos_rules[j], fixed = T)
+        if(length(pos_strings[j]) > 0){
+          if(grepl(positions[k], pos_strings[j], fixed = T)){
+            name_strings[j] <- gsub(positions[k], names[k], pos_strings[j], fixed = T)
           }
         }
       }
@@ -154,12 +156,12 @@ positions_to_names <- function(X, pos_rules){
     
     while(bool){
       bool <- F
-      for (j in 1:length(name_rules)){
+      for (j in 1:length(name_strings)){
         for (k in 1:length(positions)){
-          if(length(name_rules[j]) > 0){
-            if(grepl(positions[k],name_rules[j], fixed = T)){
+          if(length(name_strings[j]) > 0){
+            if(grepl(positions[k],name_strings[j], fixed = T)){
               bool <- T
-              name_rules[j] <- gsub(positions[k], names[k], name_rules[j], fixed = T)
+              name_strings[j] <- gsub(positions[k], names[k], name_strings[j], fixed = T)
             }
           }
         }
@@ -168,7 +170,7 @@ positions_to_names <- function(X, pos_rules){
     
   }
   
-  name_rules
+  name_strings
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -176,29 +178,60 @@ positions_to_names <- function(X, pos_rules){
 #'@name names_to_numbers
 #'@description replaces the names of predictor attributes with numbers indicating their column positions.
 #'@param X data frame of predictor attributes
-#'@param variable_names vector of attribute names 
+#'@param attribute_names vector of attribute names 
 #'@return a vector of numbers corresponding to the attributes' column position
 
-names_to_numbers <- function(X, variable_names){
+names_to_numbers <- function(X, attribute_names){
   names <- colnames(X)
   positions <- 1:ncol(X)
   
-  num_variables <- c()
+  num_attributes <- c()
   
-  if(length(variable_names) != 0){
-    for (j in 1:length(variable_names)){
+  if(length(attribute_names) != 0){
+    for (j in 1:length(attribute_names)){
       for (k in 1:length(names)){
-        if(names[k] == variable_names[j]){
-          num_variables[j] <- gsub(names[k], positions[k], variable_names[j], fixed = T)
+        if(names[k] == attribute_names[j]){
+          num_attributes[j] <- gsub(names[k], positions[k], attribute_names[j], fixed = T)
         }
       }
     }
     
   }
-  as.numeric(num_variables)
+  as.numeric(num_attributes)
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#' @name avergage_rule_length
+#' @description calculates the average rule lengths of the rules in the final model.
+
+average_rule_length <- function(rules){
+  rule_lengths <- c()
+  for(i in 1:length(rules)){
+    rule_lengths[i] <- str_count(rules[i], "&") + 1
+  }
+  avg_length <- mean(rule_lengths)
+  avg_length
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#' @name imp_terms
+#' @description selects the n model terms with the greatest model coefficients indicating most important rules and linear terms.
+
+imp_terms <- function(model, n){
+  largest_coefs <- sort(model[,2], decreasing = T)[1:n]
+  largest_pos <- c()
+  for(i in 1: length(largest_coefs)){
+    largest_pos[i] <- which(model[,2] == largest_coefs[i])
+  }
+  imp_terms <- model[,1][largest_pos]
+  imp_terms
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 #' @name regularized_regression
 #' @description performs regularized regression as described in Stage 3 of the ERF model.
@@ -267,7 +300,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   #Results$features <- positions_to_names(X, Results$features)
   
   # Average rule length
-  avgrl <- average_rule_length(Results$features)
+  avgrulelen <- average_rule_length(Results$features)
   
   
   # Feature importance
@@ -275,7 +308,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   
   if (is.null(Xtest) == T) {
     result <- list(Results = Results, s = s, NTerms = n_terms,
-                   lambda =lambda, PenaltyFactor = p.fac, AvgRuleLength = avgrl, 
+                   lambda =lambda, PenaltyFactor = p.fac, AvgRuleLength = avgrulelen, 
                    ImpFeatures = important_terms)
     
   } else{
@@ -289,7 +322,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
     result <- list(Results = Results, s = s,
                    NTerms = n_terms, lambda =lambda, 
                    ConfusionMatrix = conf_mat, AUC = auc, CE = ce, PenaltyFactor = p.fac,
-                   Predictions = predictions, AvgRuleLength = avgrl,
+                   Predictions = predictions, AvgRuleLength = avgrulelen,
                    ImpFeatures = important_terms)
     
   }
@@ -298,11 +331,11 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#' @title regr_output
+#' @title regression_output
 #' @description  prints the function output of 'regularized regression'.
 
 
-regr_output <- function(X, Xtest, regmodel){
+regression_output <- function(X, Xtest, regmodel){
   cat(sprintf("Final Expert RuleFit ensemble - Model & Results Overview"))
   cat(sprintf("\n"))
   cat(sprintf("\n"))
@@ -400,65 +433,26 @@ expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp,
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#' @name avergage_rule_length
-#' @description calculates the average rule lengths of the rules in the final model.
-
-average_rule_length <- function(rules){
-  rule_lengths <- c()
-  for(i in 1:length(rules)){
-    rule_lengths[i] <- str_count(rules[i], "&") + 1
-  }
-  avg_length <- mean(rule_lengths)
-  avg_length
-}
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#' @name imp_terms
-#' @description selects the n model terms with the greatest model coefficients indicating most important rules and linear terms.
-
-imp_terms <- function(model, n){
-  largest_coefs <- sort(model[,2], decreasing = T)[1:n]
-  largest_pos <- c()
-  for(i in 1: length(largest_coefs)){
-    largest_pos[i] <- which(model[,2] == largest_coefs[i])
-  }
-  imp_terms <- model[,1][largest_pos]
-  imp_terms
-}
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#' @title contains
+#' @description selects and returns the common subset of 2 string vectors, one of which is a subset of the other
 
 
-
-contains <- function(ek, final_terms){
-  ek_contained <- c()
-  if(length(ek)>0){
-    for (i in 1:length(ek)){
-      if(ek[i] %in% final_terms){
-        ek_contained <- c(ek_contained, ek[i])
+contains <- function(subset, superset){
+  common_set <- c()
+  if(length(subset)>0){
+    for (i in 1:length(subset)){
+      if(subset[i] %in% superset){
+        common_set <- c(common_set, subset[i])
       }
     }
   }
-  ek_contained
+  common_set
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-not_contained <- function(string_vec1, string_vec2){
-  uncommon_vec <- c()
-  if(length(string_vec1)>0){
-    for (i in 1:length(string_vec1)){
-      if(!(string_vec1[i] %in% string_vec2)){
-        uncommon_vec <- c(uncommon_vec, string_vec1[i])
-      }
-    }
-  }
-  uncommon_vec
-}
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#' @title support_remove
+#' @description selects and returns a subset of 'rules' to be deleted due to too low of too high support ('minsup') on the 'data'.
 
 support_remove <- function(rules, data, minsup){
   sup_vals <- c()
@@ -478,6 +472,10 @@ support_remove <- function(rules, data, minsup){
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#' @title support_take
+#' @description selects and returns a subset of 'rules' within the specified support range on the 'data'.
+
+
 support_take <- function(rules, data, minsup){
   sup_vals <- c()
   if(length(rules) > 0){
@@ -491,4 +489,4 @@ support_take <- function(rules, data, minsup){
   out
 }
 
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -366,7 +366,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     
     
     if(print_output == T){
-      reg_info <- regr_output(X, Xtest, regmodel)
+      reg_info <- regression_output(X, Xtest, regmodel)
       exp_info <- expert_output(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp, 
                                 prop_ek_imp, all_opt_ek, all_conf_ek, removed_ek, 
                                 prop_opt_ek, prop_all_ek)
@@ -497,7 +497,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     
     
     if(print_output == T){
-      reg_info <- regr_output(X, Xtest, regmodel)
+      reg_info <- regression_output(X, Xtest, regmodel)
       exp_info <- expert_output(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp, 
                                 prop_ek_imp, all_opt_ek, all_conf_ek, removed_ek, 
                                 prop_opt_ek, prop_all_ek)
