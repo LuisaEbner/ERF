@@ -376,7 +376,7 @@ expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp,
   
   cat(sprintf("\n"))
   cat(sprintf("a) Among them optional expert knowledge (EK): \n"))
-  if(!(is.null(opt_ek_imp))| !(is.null(corr_ek_imp))){
+  if(length(opt_ek_imp)>0 | length(corr_ek_imp)>0){
     print(opt_ek_imp, corr_ek_imp)
   } else {
     print("None.")
@@ -384,7 +384,7 @@ expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp,
   
   cat(sprintf("\n"))
   cat(sprintf("b) Among them confirmatory EK: \n"))
-  if(!(is.null(conf_ek_imp))){
+  if(length(conf_ek_imp)>0){
     print(conf_ek_imp)
   } else {
     print("None.")
@@ -397,7 +397,7 @@ expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp,
   cat(sprintf("All EK in the final model: \n"))
   cat(sprintf("a) Optional: \n"))
   cat(sprintf("\n"))
-  if (!(is.null(all_opt_ek))){
+  if (length(all_opt_ek)>0){
     print(all_opt_ek) 
   } else {
     print("None.")
@@ -405,7 +405,7 @@ expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp,
   cat(sprintf("\n"))
   cat(sprintf("b) Confirmatory: \n"))
   cat(sprintf("\n"))
-  if (!(is.null(all_conf_ek))){
+  if (length(all_conf_ek)>0){
     print(all_conf_ek) 
   } else {
     print("None.")
@@ -416,7 +416,7 @@ expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp,
   cat(sprintf("\n"))
   cat(sprintf("EK removed due to too low/high support: \n"))
   cat(sprintf("\n"))
-  if(!(is.null(removed_ek))){
+  if(length(removed_ek) > 0){
     print(removed_ek)
   } else {
     print("None.")

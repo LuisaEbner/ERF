@@ -62,10 +62,6 @@ sim_data <- function(n_vars, n_obs, mu, sigma){
   data
 }
 
-mu <- sample(0:10, 20, replace = T)
-sigma <- sample(1:3, 1, replace = T)
-X <- sim_data(20, 100, mu, sigma)
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # 2. Define rules as relevant predictors
@@ -345,7 +341,7 @@ adapt_names <- function(data){
   pos_names <- colnames(X)
   classic_names <- c()
   for (i in 1:ncol(X)){
-    classic_names[i] <- paste("Col",i, sep = "")
+    classic_names[i] <- paste("Col",i,"_", sep = "")
   }
   colnames(data) <- c(classic_names, "y")
   return(data)

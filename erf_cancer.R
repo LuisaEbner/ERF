@@ -197,7 +197,7 @@ pre_cancer <- pre(y ~ ., data = train , family = "binomial",
 rel_coefs <- coef(pre_cancer)$coefficient[coef(pre_cancer)$coefficient != 0] 
 nterms <- length(rel_coefs) 
 
-rules <- rel_coefs$description[1:nterms]
+rules <- coef(pre_cancer)$description
 avgrulelength <- average_rule_length(rules) 
 
 # Accuracy
