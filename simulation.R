@@ -11,10 +11,11 @@ library(rlist)
 
 # external functions
 source('simulation_auxiliaries.R')
+source('erf_auxiliaries.R')
 
 
 #' @name create_simulation
-#' @description creates a data set including expert knowledge to apply the Expert-RuleFit model to
+#' @description creates a data set including expert knowledge to apply the Expert-RuleFit model 
 #' @param n_vars number of input variables to be generated from a (standard) normal distribution, default = 100
 #' @param n_obs number of observations/examples, default = 2000
 #' @param mu single number or vector of length n_vars defining the mean of the normal distribution used to generate input variables, default = 0
@@ -101,15 +102,19 @@ create_simulation <- function(n_vars = 100, n_obs = 2000,
   y <- sample_y(y1_prob)
   
   # 9. Define dataset with all relevant predictor variables, y1_prob and y
-  sim_relevant_data = cbind(dt_y, y1_prob, y)
+  sim_relevant_data = cbind(dt_y, y)
   sim_relevant_data$y <- factor(sim_relevant_data$y)
+  sim_relevant_data <- adapt_names(sim_relevant_data)
 
   # 10. Define full dataset inkl. y
   sim_full_data <- cbind(X, y)
   sim_full_data$y <- factor(sim_full_data$y)
+  sim_full_data <- adapt_names(sim_full_data)
+  sim_full_X <- sim_full_data[,-ncol(sim_full_data)]
   expert_rules <- rule_preds
+  expert_rules_names <- positions_to_names(X = sim_full_X, expert_rules)
     
-  out = list(sim_relevant_data, sim_full_data, expert_rules)
+  out = list(sim_relevant_data, sim_full_data, expert_rules_names)
   
   out
 }
@@ -130,12 +135,11 @@ create_simulation <- function(n_vars = 100, n_obs = 2000,
 # Dataset of relevant predictors + y 
 # rel_predictor_data <- simulation[[1]]
 
-
 # Data to apply Expert-RuleFit to
 # data <- simulation[[2]]
 
 # Expert knowledge
 # expert_rules <- simulation[[3]]
-# expert_rules
+
 
 

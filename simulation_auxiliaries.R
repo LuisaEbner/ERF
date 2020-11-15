@@ -11,9 +11,26 @@ library(rlist)
 # External functions
 source("createX.R")
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Functions
+
+# 1. sim_data
+# 2. sample_rule_vars
+# 3. sample_rule_lengths
+# 4. sample_vars_per_rule
+# 5. sample_signs_per_rule
+# 6. sample_values_per_rule
+# 7. define_conditions
+# 9. define_rules
+# 10. sample_betas
+# 11. sample_epsilon
+# 12. calc_linear_predictor
+# 13. sample_y
+# 14. adapt_names
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 # 1. Generate input data
 
@@ -28,13 +45,26 @@ source("createX.R")
 sim_data <- function(n_vars, n_obs, mu, sigma){
   data <- data.frame(matrix(NA, nrow = n_obs, ncol = n_vars))
   for (j in 1:n_vars){
-    col = rnorm(n_obs, mu, sigma)
+    if(length(mu) == n_vars & length(sigma) == 1){
+      col = rnorm(n_obs, mu[j], sigma)
+    } else if(length(mu) == 1 & length(sigma) == n_vars){
+      col = rnorm(n_obs, mu, sigma[j])
+    } else if(length(mu) == n_vars & length(sigma) == n_vars){
+      col = rnorm(n_obs, mu[j], sigma[j])
+    } else if(length(mu) == 1 & length(sigma) == 1){
+      col = rnorm(n_obs, mu, sigma)
+    } else {
+      print("Wrong Input: mu and sigma need to be either an integer or a vector 
+            of the same length as the number of input attributes to be generated.")
+    }
     data[,j] <- col
   }
   data
 }
 
-# X <- sim_data(n_vars, n_obs, mu, sigma)
+mu <- sample(0:10, 20, replace = T)
+sigma <- sample(1:3, 1, replace = T)
+X <- sim_data(20, 100, mu, sigma)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -309,3 +339,14 @@ sample_y <- function(y1_prob){
 # data <- cbind(X, y)
 
 #===============================================================================
+
+adapt_names <- function(data){
+  X <- data[, -ncol(data)]
+  pos_names <- colnames(X)
+  classic_names <- c()
+  for (i in 1:ncol(X)){
+    classic_names[i] <- paste("Col",i, sep = "")
+  }
+  colnames(data) <- c(classic_names, "y")
+  return(data)
+}
