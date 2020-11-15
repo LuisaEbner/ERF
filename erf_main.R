@@ -375,7 +375,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     }
     
     
-    out = c(Train = Xt , 
+    out = list(Train = Xt , 
             Model = regmodel$Results, 
             Features = regmodel$Results$features, 
             Coefficients = regmodel$Results$coefficients, 
@@ -506,7 +506,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     }
     
     
-    out = c(Train = Xt , 
+    out = list(Train = Xt, 
             Test = X_test,
             Model = regmodel$Results, 
             Features = regmodel$Results$features, 
