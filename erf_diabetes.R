@@ -116,11 +116,15 @@ conf_dk_lins12 <- c("Age", "BMI", "DPF")
 #===============================================================================
 
 # a) Training data
-sets <- create_X_y_Xtest_ytest(data, 0.7, pos_class = 1)
-X <- sets[[1]]
-y <- sets[[2]]
-Xtest <- sets[[3]]
-ytest <- sets[[4]]
+
+train.index <- createDataPartition(data$y, p = 0.7, list = FALSE)
+train <- data[ train.index,]
+test  <- data[-train.index,]
+X <- train[, -ncol(train)]
+y <- train$y
+Xtest <- test[, -ncol(test)]
+ytest <- test$y
+
 
 # b) Expert Rules
 conf_dk_rules1 <- support_take(dk_rules1, data, 0.05)
@@ -141,7 +145,6 @@ confirmatory_linears <- c("Age", "BMI", "DPF")
 #                         2.2. Model Application
 #===============================================================================
 
-
 erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                               optional_expert_rules = optional_rules, 
                               confirmatory_expert_rules = confirmatory_rules,  
@@ -153,55 +156,29 @@ erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
 #                        3. MODEL COMPARISONS
 #===============================================================================
 
-# a) ExpertRuleFit  w.o. expert knowledge
-rf_diabetes <- ExpertRuleFit(X, y, Xtest, ytest, print_output = F)
+erf1 <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
+                      optional_expert_rules = optional_rules, 
+                      confirmatory_expert_rules = confirmatory_rules,  
+                      optional_linear_terms=optional_linears,
+                      confirmatory_linear_terms = confirmatory_linears, 
+                      print_output = F)
 
-# Complexity
-rf_diabetes$NTerms 
-rf_diabetes$AvgRuleLength 
+erf2 <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
+                      optional_expert_rules = confirmatory_rules, 
+                      print_output = F)
 
-# Accuracy 
-rf_diabetes$AUC
-rf_diabetes$ClassErr
+erf3 <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
+                      confirmatory_expert_rules = confirmatory_rules,
+                      print_output = F)
 
-# Important features
-rf_diabetes$ImportantFeatures
+pre1 <- pre_for_comparison(train, test)
 
-#-------------------------------------------------------------------------------
+# funktioniert aktuell nicht
+# pre2 <- pre_for_comparison(train, test, conf = confirmatory_rules)
 
-# b) ERF Alternative: Prediction Rule Ensembles (pre package)
 
-#pre(formula, data, family = "binomial", use.grad = TRUE,
-#    tree.unbiased = TRUE, type = "both", sampfrac = 0.5, maxdepth = 3L,
-#    learnrate = .01, confirmatory = NULL, mtry = Inf, ntrees = 500,
-#    tree.control, removeduplicates = TRUE, removecomplements = TRUE,
-#    winsfrac = 0.025, normalize = TRUE, standardize = FALSE,
-#    ordinal = TRUE, nfolds = 10L, verbose = FALSE, par.init = FALSE,
-#    par.final = FALSE, ...)
-
-# Input
-train <- cbind.data.frame(X, y)
-test <- cbind.data.frame(Xtest, ytest)
-
-# Model
-pre_diabetes <- pre(y ~ ., data = train , family = "binomial", 
-                  type = "rules", ntrees = 250)
-
-# Complexity
-rel_coefs <- coef(pre_diabetes)$coefficient[coef(pre_diabetes)$coefficient != 0] 
-nterms <- length(rel_coefs) 
-
-rules <- rel_coefs$description[1:nterms]
-avgrulelength <- average_rule_length(rules) 
-
-# Accuracy
-preds <- predict(pre_diabetes, newdata = test, type = "class")
-auc <-  auc(ytest, as.integer(preds)) 
-ce <-   ce(ytest, as.integer(preds)) 
-
-# Important features 
-impfeatures <- rules[1:10] 
-
+performance_comparison <- modelcomp(erf1 = erf1, erf2 = erf2 , erf3 = erf3, 
+                                    pre1 = pre1, pre2 = NULL, pre3 = NULL)
 #===============================================================================
 
 

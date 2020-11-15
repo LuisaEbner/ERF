@@ -200,7 +200,7 @@ prepare_cervicalcancer_data <- function(data, del_maj_missing = T,
   colnames(data)[which(names(data) == "IUD")] <- "Intra.uterine.device"
   colnames(data)[which(names(data) == "STDs")] <- "Sexually.transmitted.diseases"
   colnames(data)[which(names(data) == "Dx")] <- "DX"
-  
+  names(data)[names(data) == 'Class'] <- 'y'
   
   
   return(data)

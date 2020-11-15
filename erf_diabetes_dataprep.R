@@ -42,6 +42,7 @@ prepare_diabetes_data <- function(data, imp_method = "rf"){
   
   # turn binary target into factor
   data$Outcome <- as.factor(data$Outcome)
+  names(data)[names(data) == 'Outcome'] <- 'y'
   
   return(data)
 }

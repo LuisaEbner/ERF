@@ -10,6 +10,14 @@
 library(caret)
 library(stringr)
 library(dplyr)
+library(glmnet)
+library(xgboost)
+library(RCurl)
+library(xrf)
+library(pROC)
+library(ROCit)
+library(ROCR)
+library(mice)
 
 
 # Functions
@@ -25,6 +33,7 @@ library(dplyr)
 # 10. contains
 # 11. support_remove
 # 12. support_take
+# 13. modelcomp
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -490,3 +499,146 @@ support_take <- function(rules, data, minsup){
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+pre_for_comparison <- function(train, test, ntrees = 250, n_imp = 10, 
+                               conf = NULL){
+  
+  if(is.null(conf)){
+    pre <- pre(y ~ ., data = train, family = "binomial", ntrees = ntrees)
+  } else {
+    pre <- pre(y ~ ., data = train, family = "binomial", ntrees = ntrees, 
+               confirmatory = conf)
+  }
+
+  coefficients <- coef(pre)$coefficient[coef(pre)$coefficient != 0] 
+  nterms <- length(coefficients) -1
+  rules <- coef(pre)$description[2:(nterms+1)]
+  model <-  data.frame(features = rules, coefficients = coefficients)
+  lambda.1se <- pre$glmnet.fit$lambda.1se
+  lambda.min <- pre$glmnet.fit$lambda.min
+  arl <- average_rule_length(rules) 
+  predictions <- as.numeric(as.vector(predict(pre, newdata = test, type = "class")))
+  auc <-  auc(test$y, predictions) 
+  ce <-   ce(test$y, predictions) 
+  conf_mat <- table(pred = predictions, true = test$y)
+  impfeatures <- rules[1:n_imp]
+  
+  if(!(is.null(conf))){
+    confek <- conf
+  } else{
+    confek <- NULL
+  }
+  
+  impek <- contains(confek, impfeatures)
+  prop_impek <- length(impek)/length(impfeatures)
+  prop_ek <- length(confek)/nterms
+
+  
+  out = list(Train = train, 
+             Test = test,
+             Model = model, 
+             Features = rules, 
+             Coefficients = coefficients, 
+             NTerms = nterms,
+             Predictions = predictions,
+             AvgRuleLength = arl,
+             ConfusionMatrix = conf_mat, 
+             AUC = auc, 
+             ClassErr = ce,
+             ImportantFeatures = impfeatures,
+             ConfirmatoryEK = confek,
+             ImportantEK = impek,
+             PropEKImp = prop_impek,
+             PropEK = prop_ek)
+  
+  out
+}
+
+# Example
+# source("erf_diabetes_dataprep.R")
+# source("erf_main.R")
+# data <- read.csv(file = 'diabetes.csv', header = T)
+# data <- prepare_diabetes_data(data)
+# train.index <- createDataPartition(data$y, p = 0.7, list = FALSE)
+# train <- data[ train.index,]
+# test  <- data[-train.index,]
+
+# pre_for_comparison(train, test)
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#' ERF Alternative: Prediction Rule Ensembles (pre package)
+
+#pre(formula, data, family = "binomial", use.grad = TRUE,
+#    tree.unbiased = TRUE, type = "both", sampfrac = 0.5, maxdepth = 3L,
+#    learnrate = .01, confirmatory = NULL, mtry = Inf, ntrees = 500,
+#    tree.control, removeduplicates = TRUE, removecomplements = TRUE,
+#    winsfrac = 0.025, normalize = TRUE, standardize = FALSE,
+#    ordinal = TRUE, nfolds = 10L, verbose = FALSE, par.init = FALSE,
+#    par.final = FALSE, ...)
+
+#' @name modelcomp
+#' @description compares measures of model complexity, predictive accuracy, and expert knowledge usage across different ERF specifications and the PRE model
+#' @param data initial, full data set
+#' @param train_frac fraction of training data in train-test-split
+#' @param see function ExpertRuleFit
+#' @return table of measures for comparison
+
+modelcomp <- function(erf1, erf2 = NULL , erf3 = NULL, 
+                      pre1 = NULL, pre2 = NULL, pre3 = NULL, print_output = T){
+  
+  comp_table <- data.frame(ERF_1 <- c(erf1$NTerms, erf1$AvgRuleLength, erf1$AUC,
+                                      erf1$ClassErr, erf1$PropEKImp, erf1$PropEK))
+  colnames_table <- c("ERF1")
+
+  if(!(is.null(erf2))){
+    ct2 <- data.frame(ERF_2 <- c(erf2$NTerms, erf2$AvgRuleLength, erf2$AUC,
+                                 erf2$ClassErr, erf2$PropEKImp, erf2$PropEK))
+    comp_table <- cbind(comp_table, ct2)
+    colnames_table <- c(colnames_table, "ERF2")
+  }
+  
+  if(!(is.null(erf3))){
+    ct3 <- data.frame(ERF_2 <- c(erf3$NTerms, erf3$AvgRuleLength, erf3$AUC,
+                                 erf3$ClassErr, erf3$PropEKImp, erf3$PropEK))
+    comp_table <- cbind(comp_table, ct3)
+    colnames_table <- c(colnames_table, "ERF3")
+  }
+  
+  if(!(is.null(pre1))){
+    ct4 <- data.frame(PRE_1 <- c(pre1$NTerms, pre1$AvgRuleLength, pre1$AUC,
+                                 pre1$ClassErr, pre1$PropEKImp, pre1$PropEK))
+    comp_table <- cbind(comp_table, ct4)
+    colnames_table <- c(colnames_table, "PRE1")
+  }
+  
+  if(!(is.null(pre2))){
+    ct5 <- data.frame(PRE_2 <- c(pre2$NTerms, pre2$AvgRuleLength, pre2$AUC,
+                                 pre2$ClassErr, pre2$PropEKImp, pre2$PropEK))
+    comp_table <- cbind(comp_table, ct5)
+    colnames_table <- c(colnames_table, "PRE2")
+  }
+  
+  if(!(is.null(pre3))){
+    ct6 <- data.frame(PRE_3 <- c(pre3$NTerms, pre3$AvgRuleLength, pre3$AUC,
+                                 pre3$ClassErr, pre3$PropEKImp, pre3$PropEK))
+    comp_table <- cbind(comp_table, ct6)
+    colnames_table <- c(colnames_table, "PRE3")
+  }
+  
+  
+  rownames(comp_table) = c("# terms", "avg. rule length", "AUC", "Class. Err.",
+                           "EK/# terms", "EK/# imp. terms")
+  colnames(comp_table) = colnames_table
+  
+
+  if(print_output == T){
+    print(comp_table)
+  }
+
+  out <- comp_table
+  out
+  
+}
+
