@@ -107,7 +107,17 @@ conf_dk_lins12 <- c("Age", "BMI", "DPF")
 #                         HEURISTIC EXPERT KNOWLEDGE
 #===============================================================================
 
-# interview information following
+exp_interview_rules <- c("Age<=42 & BP<=80 & BMI<=29",
+                         "Age>=45 & BP>=90 & Glucose>=125",
+                         "Age<=31 & BP>=90 & BMI>=38",
+                         "Age>=55 & BP<=80 & BMI<=29",
+                         "Age>=60 & Glucose>=130 & BMI>=35", 
+                         "Age>=60 & BP>=90 & BMI>=37",
+                         "Age>=45 & BP>=90 & BMI>=35 & Glucose>=130",
+                         "Age>=55 & BP<=90 & BMI<=30 & Glucose>=130",
+                         "Age<=60 & BP<=90 & BMI<=30 & Glucose<=100")
+
+exp_interview_lins <- c("BMI", "Age", "BP", "Glucose")
 
 #===============================================================================
 #                               2. ERF MODEL
@@ -149,9 +159,11 @@ erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                               optional_expert_rules = optional_rules, 
                               confirmatory_expert_rules = confirmatory_rules,  
                               optional_linear_terms=optional_linears,
-                              confirmatory_linear_terms = confirmatory_linears, 
-                              corelim = 0.9)
+                              confirmatory_linear_terms = confirmatory_linears,
+                              expert_only = T, print_output = T)
 
+
+erf_diabetes$Model
 #===============================================================================
 #                        3. MODEL COMPARISONS
 #===============================================================================
@@ -164,14 +176,14 @@ erf1 <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                       print_output = F)
 
 erf2 <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
-                      optional_expert_rules = confirmatory_rules, 
-                      print_output = F)
+                      print_output = F, s = "lambda.1se")
 
 erf3 <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                       confirmatory_expert_rules = confirmatory_rules,
-                      print_output = F)
+                      print_output = F, s = "lambda.1se")
 
 pre1 <- pre_for_comparison(train, test)
+
 
 # funktioniert aktuell nicht
 # pre2 <- pre_for_comparison(train, test, conf = confirmatory_rules)

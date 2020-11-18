@@ -45,7 +45,7 @@ source("erf_main.R")
 data <- read.csv(file = 'risk_factors_cervical_cancer.csv', header = T)
 
 # Preprocessing (see 'erf_cancer_dataprep.R')
-data <- prepare_cervicalcancer_data(data = data, balance = T)
+data <- prepare_cervicalcancer_data(data = data, balance = F)
 
 str(data)
 
@@ -75,8 +75,8 @@ dk_rules1 <- c("STDs.HPV == 1", # STDs.HPV == 1
                "STDs.Hepatitis.B == 1",
                "First.sexual.intercourse<14",
                "(((Age - First.sexual.intercourse)*Number.of.sexual.partners)/10)>4",
-               "(STDs.genital.herpes+STDs.molluscum.contagiosum+
-               STDs.pelvic.inflammatory.disease+STDs.syphilis)>=1", 
+               "any(c(STDs.genital.herpes, STDs.molluscum.contagiosum, 
+               STDs.pelvic.inflammatory.disease, STDs.syphilis)>0)", 
                "Hormonal.Contraceptives..years.>5")
 
 
@@ -153,8 +153,7 @@ optional_linears <- dk_lins
 erf_cancer <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                               optional_expert_rules = optional_rules, 
                               confirmatory_expert_rules = confirmatory_rules,  
-                              optional_linear_terms=optional_linears,
-                              corelim = 0.9)
+                              optional_linear_terms=optional_linears)
 
 
 #===============================================================================

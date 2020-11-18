@@ -69,9 +69,9 @@ create_X_y_Xtest_ytest <- function(data, train_frac, pos_class = 1,
   train <- data[ train.index,]
   test  <- data[-train.index,]
   
-  # convert data frame into matrix, remove target attribute
-  X <- model.matrix(y ~., train)[,-1]
-  Xtest <- model.matrix(y~.,test)[,-1]
+  # create dataframe of input attributes
+  X <- train[, -ncol(train)]
+  Xtest <- test[, -ncol(test)]
   
   # Convert target attribute into 0-1-coded factor
   y <- factor(ifelse(train$y == pos_class, 1, 0))
@@ -232,9 +232,12 @@ average_rule_length <- function(rules){
 imp_terms <- function(model, n){
   largest_coefs <- sort(model[,2], decreasing = T)[1:n]
   largest_pos <- c()
-  for(i in 1: length(largest_coefs)){
-    largest_pos[i] <- which(model[,2] == largest_coefs[i])
+  if(length(largest_coefs) > 0){
+    for(i in 1: length(largest_coefs)){
+      largest_pos[i] <- which(model[,2] == largest_coefs[i])
+    } 
   }
+
   imp_terms <- model[,1][largest_pos]
   imp_terms
 }

@@ -139,7 +139,7 @@ prepare_cervicalcancer_data <- function(data, del_maj_missing = T,
                  "Dx.HPV", "Dx")
   
   data[cols.int] <- lapply(data[cols.int], as.integer)
-  data[cols.fact] <- lapply(data[cols.fact], as.factor)
+  data[cols.fact] <- lapply(data[cols.fact], as.character)
   
   
   # delete smokes packs year (seemingly wrong), AIDS, cervical condylomatis (only 1 level)
