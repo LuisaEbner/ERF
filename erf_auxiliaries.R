@@ -18,7 +18,7 @@ library(pROC)
 library(ROCit)
 library(ROCR)
 library(mice)
-
+library(cvAUC)
 
 # Functions
 # 1. create_X_y_Xtest_ytest
@@ -300,7 +300,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   
   
   # number of non-zero coefficients (= number of terms/features)
-  n_terms = length(coefs[which(coefs != 0 ) ] - 1)
+  n_terms = length(coefs[which(coefs != 0 ) ]) -1
   
   Results <- data.frame( features = coefs@Dimnames[[1]][which(coefs != 0 ) ], 
                          coefficients    = coefs       [ which(coefs != 0 ) ]
@@ -325,7 +325,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
     pred_class <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "class")
     predictions <- as.numeric(pred_class)
     conf_mat <- table(pred = pred_class,true = ytest)
-    auc <-  auc(ytest, as.integer(pred_class))
+    auc <-  auc(ytest, pred_prob)
     ce <-   ce(ytest, as.integer(pred_class))
     
     result <- list(Results = Results, s = s,
@@ -378,15 +378,18 @@ regression_output <- function(X, Xtest, regmodel){
 #' @title expert_output
 #' @description  prints an information summary on expert knowledge that entered the final ERF model.
 
-
-expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp, 
-                          prop_ek_imp, all_opt_ek, all_conf_ek, removed_ek, 
-                          prop_opt_ek, prop_all_ek){
+expert_output <- function(X = X, opt_ek_imp = opt_ek_imp, conf_ek_imp = conf_ek_imp,
+                          n_imp = n_imp, prop_ek_imp = prop_ek_imp,
+                          opt_ek_in = opt_ek_in, conf_ek_in = conf_ek_in, 
+                          removed_as_unsup = removed_as_unsup,
+                          removed_as_corr = removed_as_corr,
+                          prop_opt_ek = prop_opt_ek, prop_all_ek = prop_all_ek){
   
   cat(sprintf("\n"))
   cat(sprintf("a) Among them optional expert knowledge (EK): \n"))
-  if(length(opt_ek_imp)>0 | length(corr_ek_imp)>0){
-    print(opt_ek_imp, corr_ek_imp)
+  if(length(opt_ek_imp)>0){
+    opt_ek_imp <- positions_to_names(X, opt_ek_imp)
+    print(opt_ek_imp)
   } else {
     print("None.")
   }
@@ -394,6 +397,7 @@ expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp,
   cat(sprintf("\n"))
   cat(sprintf("b) Among them confirmatory EK: \n"))
   if(length(conf_ek_imp)>0){
+    conf_ek_imp <- positions_to_names(X, conf_ek_imp)
     print(conf_ek_imp)
   } else {
     print("None.")
@@ -406,16 +410,18 @@ expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp,
   cat(sprintf("All EK in the final model: \n"))
   cat(sprintf("a) Optional: \n"))
   cat(sprintf("\n"))
-  if (length(all_opt_ek)>0){
-    print(all_opt_ek) 
+  if (length(opt_ek_in)>0){
+    opt_ek_in <- positions_to_names(X, opt_ek_in)
+    print(opt_ek_in)
   } else {
     print("None.")
   }
   cat(sprintf("\n"))
   cat(sprintf("b) Confirmatory: \n"))
   cat(sprintf("\n"))
-  if (length(all_conf_ek)>0){
-    print(all_conf_ek) 
+  if (length(conf_ek_in)>0){
+    conf_ek_in <- positions_to_names(X, conf_ek_in)
+    print(conf_ek_in)
   } else {
     print("None.")
   }
@@ -425,12 +431,22 @@ expert_output <- function(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp,
   cat(sprintf("\n"))
   cat(sprintf("EK removed due to too low/high support: \n"))
   cat(sprintf("\n"))
-  if(length(removed_ek) > 0){
-    print(removed_ek)
+  if(length(removed_as_unsup) > 0){
+    removed_as_unsup <- positions_to_names(X, removed_as_unsup)
+    print(removed_as_unsup)
   } else {
     print("None.")
   }
   
+  cat(sprintf("\n"))
+  cat(sprintf("EK removed due to too high correlation: \n"))
+  cat(sprintf("\n"))
+  if(length(removed_as_corr) > 0){
+    removed_as_corr <- positions_to_names(X, removed_as_corr)
+    print(removed_as_corr)
+  } else {
+    print("None.")
+  }
   
   cat(sprintf("\n"))
   cat(sprintf("Proportion of optional EK in the final model:  %#.4f \n", prop_opt_ek))
@@ -512,8 +528,12 @@ pre_for_comparison <- function(train, test, ntrees = 250, n_imp = 10,
 
   coefficients <- coef(pre)$coefficient[coef(pre)$coefficient != 0] 
   nterms <- length(coefficients) -1
-  rules <- coef(pre)$description[2:(nterms+1)]
-  model <-  data.frame(features = rules, coefficients = coefficients)
+  rules <- coef(pre)$description[1:length(coefficients)]
+  if(length(coefficients) == length(rules)){
+    model <-  data.frame(features = rules, coefficients = coefficients)
+  } else{
+    model <- list(coefficients = coefficients, rules = rules)
+  }
   lambda.1se <- pre$glmnet.fit$lambda.1se
   lambda.min <- pre$glmnet.fit$lambda.min
   arl <- average_rule_length(rules) 

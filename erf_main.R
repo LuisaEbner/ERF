@@ -47,6 +47,8 @@ source("create_test.R")
 #' @param confirmatory_expert_rules specifies a character vector of expert-derived rules to certainly be included as base classifiers in the final model. No penalty will be applied to the respective coefficients, which will yield a non-zero coefficient for the rule in the final model.
 #' @param expert_linear_terms specifies a character vector of expert-derived predictor attributes to be included as candidate base learners in the final model.
 #' @param confirmatory_linear_terms specifies a character vector of expert-derived predictor attributes to certainly be included as base learners in the final model. No penalty will be applied to the respective coefficients, which will yield a non-zero coefficient for the linear term in the final model.
+#' @param optional_penalty specifies the penalty factor applied to all optional_expert_rulesand optional_linear_terms as a real value between 0 and 1.  May be used toprevent preference for data rules whose predictive relevance may partly resultfrom modeling noise in the data set.
+#' @param expert_only specifies whether ONLY Expert rules and -linear terms should be included as candidates to the final model.
 #' @param ntree specifies the number of trees in the ensemble step from which data rules are extracted.
 #' @param ensemble specifies whether gradient boosting ("GBM"), random forest ("RF") or a mixture of both ("both") shall be employed to generate the tree ensemble.
 #' @param mix specifies that mix*ntree trees are generated via random forest and (1-mix)*ntree trees via gradient boosting whenever ensemble is set to "both".
@@ -69,11 +71,11 @@ source("create_test.R")
 ##'  \item{ImportantFeatures}{returns a character vector including the n_imp most important ensemble learners (features) according to the absolute value of their respective coefficients.}
 ##'  \item{ImportantEK}{returns a character vector including the optional and confirmatory expert knowledge among the ImportantFeatures.}
 ##'  \item{PropEKImp}{returns the proportion (real value) of EK among the ImportantFeatures.}
-##'  \item{OptionalEK}{returns a character vector including all of the optional expert rules and expert linear terms including data rules that are perfectly correlated with optional expert rules.}
-##'  \item{ConfirmatoryEK}{returns  a  character  vector  including  all  confirmatory expert rules and linear terms included in the model.}
-##'  \item{RemovedEK}{returns a character vector including the expert rules that were removed due to too low or too high support on the dataset.}
-##'  \item{PropOptionalEK}{returns the proportion (real value) of optional expert rules and optional expert linear terms (including perfectly correlated data rules) in the final model.}
-##'  \item{PropEK}{returns the proportion (real value) of all expert rules and expert linear terms (optional + confirmatory) the final model.}
+##'  \item{OptionalEK}{returns a character vector including all optional EK (rules and lin-ear terms) included in the final model.}
+##'  \item{ConfirmatoryEK}{returns a character vector including all confirmaotry EK (rulesand linear terms) included in the final model.}
+##'  \item{RemovedEK}{returns a character vector including those EK terms that were re-moved due to too low support or too high correlation with other expert- or data rules.}
+##'  \item{PropOptionalEK}{returns a numeric value between 0 and 1 indicating the pro-portion of optional EK included in the final model.}
+##'  \item{PropEK}{returns a numeric value between 0 and 1 indicating the proportion ofEK of any kind included in the final model.}
 ##'  If Xtest is not NULL, additional list elements are:
 ##'  \item{Test}{returns a large data frame as the result of Combined Rule Generation Stage within the ERF model applied to the test data.  The same contains as columns an intercept, standardized expert linear terms, data rules and expert rules. Only the data rules are mandatory, the remaining elements are optional.}
 ##'  \item{Predictions}{returns a binary vector of target predictions for the observations in the test set.}
@@ -84,9 +86,9 @@ source("create_test.R")
 
 ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                          optional_expert_rules = NULL, confirmatory_expert_rules = NULL,  
-                         optional_linear_terms=NULL, confirmatory_linear_terms = NULL,
+                         optional_linear_terms=NULL, confirmatory_linear_terms = NULL, expert_only = F,
                          ntree=250, ensemble= "GBM", mix=0.5, L=3, S=6, minsup=.025, corelim = 1, 
-                         alpha = 1, s = "lambda.min", standardize = F,
+                         alpha = 1, s = "lambda.1se", standardize = F,
                          n_imp = 10, print_output = T) {
   
   # combine optional and confirmatory EK 
@@ -241,12 +243,12 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     mul = apply(X[,all_linear_terms], 2, mean)
     sdl = apply(X[,all_linear_terms], 2, sd)
     for(l in 1:length(all_linear_terms)){
-      X[,all_linear_terms[l]] = (X[,all_linear_terms[l]]-mul[l])/sdl[l]
+      X[,all_linear_terms[l]] = 0.4*((X[,all_linear_terms[l]]-mul[l])/sdl[l])
     }
   } else if(length(all_linear_terms)==1){
     mul = mean(X[,all_linear_terms])
     sdl = sd(X[,all_linear_terms])
-    X[,all_linear_terms] = (X[,all_linear_terms] - mul)/sdl
+    X[,all_linear_terms] = 0.4*((X[,all_linear_terms] - mul)/sdl)
   }
   
   # add linear terms and intercept (optional) to rule matrix Xt
@@ -281,6 +283,12 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
   }
   
   
+  if(expert_only == T){
+    keep_all <- c(all_expert_rules, optional_linear_terms, confirmatory_linear_terms)
+    keep_in <- names(Xt)[(names(Xt) %in% keep_all)]
+    Xt <- subset(Xt, select = keep_in)
+  }
+  
   
   # get the column indices of the confirmatory terms
   if((!(is.null(confirmatory_expert_rules))) & (!(is.null(confirmatory_linear_terms)))){
@@ -314,6 +322,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                                       n = n_imp,
                                       print_output = print_output)
     
+    
     # EK INFO
     
     # all ensemble members (rules + linear terms)
@@ -325,55 +334,57 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     # optional EK among the most important features
     opt_ek <- c(optional_expert_rules, optional_linear_terms)
     opt_ek_imp <- contains(opt_ek, imp_features)
-    opt_ek_imp <- positions_to_names(X, opt_ek_imp)
     
     # Expert rules removed due to too low/high support on data
-    optional_expert_rules_names <- positions_to_names(X, optional_expert_rules)
-    unsup_expert_rules <- support_remove(optional_expert_rules_names, rbind.data.frame(X,y), minsup)
-    removed_expertrules_names <- positions_to_names(X, removed_expertrules)
+    opt_er_names <- positions_to_names(X, optional_expert_rules)
+    unsup_er <- support_remove(opt_er_names, rbind.data.frame(X,y), minsup)
+    unsup_er <- names_to_positions(X, unsup_er)
     
-    # Expert rules with perfect/very high correlation with data rules among most imp. features
-    corr_expert_rules <- setdiff(removed_expertrules_names, unsup_expert_rules)
-    imp_features_names <- positions_to_names(X, imp_features)
-    corr_ek_imp <- contains(corr_expert_rules, imp_features_names)
+    removed_as_unsup <- contains(unsup_er, removed_expertrules)
+    removed_as_corr <- setdiff(removed_expertrules, removed_as_unsup)
+    
     
     # confirmatory EK among the most important features
     conf_ek <- c(confirmatory_expert_rules, confirmatory_linear_terms)
-    conf_ek_imp <- contains(confirmatory_expert_rules, imp_features)
-    conf_ek_imp <- positions_to_names(X, conf_ek_imp)
-
+    conf_ek_imp <- contains(conf_ek, imp_features)
+    
     # proportion of EK among most imp. features
-    prop_ek_imp <- length(c(opt_ek_imp, corr_ek_imp, conf_ek_imp))/n_imp
+    prop_ek_imp <- length(c(opt_ek_imp, conf_ek_imp))/n_imp
     
     # optional EK in the final model
-    all_opt_ek <- contains(opt_ek, model_features)
-    all_opt_ek <- c(all_opt_ek, corr_expert_rules)
-    all_opt_ek <- positions_to_names(X, all_opt_ek)
+    opt_ek_in <- contains(opt_ek, model_features)
     
     # confirmatory EK in the final model
-    all_conf_ek <- contains(conf_ek, model_features)
-    all_conf_ek <- positions_to_names(X, all_conf_ek)
+    conf_ek_in <- contains(conf_ek, model_features)
     
     # all EK in the final model
-    all_ek_in <- c(all_opt_ek, all_conf_ek)
+    all_ek_in <- c(opt_ek_in, conf_ek_in)
     
-    # EK removed due to too low/high support
-    removed_ek <- unsup_expert_rules
     
     # proportion of optional EK/EK among all EK/all features
-    prop_opt_ek <- length(all_opt_ek)/(regmodel$NTerms)
+    prop_opt_ek <- length(opt_ek_in)/(regmodel$NTerms)
     prop_all_ek <- length(all_ek_in)/(regmodel$NTerms)
     
     
     if(print_output == T){
-      reg_info <- regression_output(X, Xtest, regmodel)
-      exp_info <- expert_output(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp, 
-                                prop_ek_imp, all_opt_ek, all_conf_ek, removed_ek, 
-                                prop_opt_ek, prop_all_ek)
-      
+      reg_info <- regression_output(X, Xtest = NULL, regmodel)
+      exp_info <- expert_output(X = X, opt_ek_imp = opt_ek_imp, conf_ek_imp = conf_ek_imp,
+                                n_imp = n_imp, prop_ek_imp = prop_ek_imp,
+                                opt_ek_in = opt_ek_in, conf_ek_in = conf_ek_in, 
+                                removed_as_unsup = removed_as_unsup,
+                                removed_as_corr = removed_as_corr,
+                                prop_opt_ek = prop_opt_ek, prop_all_ek = prop_all_ek)
       output <- list(reg_info, exp_info)
+      
     }
     
+
+    regmodel$Results$features <- positions_to_names(X, regmodel$Results$features)
+    regmodel$ImpFeatures <- positions_to_names(X, regmodel$ImpFeatures)
+    importantek <- positions_to_names(X, c(opt_ek_imp, conf_ek_imp))
+    opt_ek_in <- positions_to_names(X, opt_ek_in)
+    conf_ek_in <- positions_to_names(X, conf_ek_in)
+    removedek <- positions_to_names(X, c(removed_as_unsup, removed_as_corr))
     
     out = list(Train = Xt , 
             Model = regmodel$Results, 
@@ -382,11 +393,11 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
             NTerms = regmodel$NTerms,
             AvgRuleLength = regmodel$AvgRuleLength,
             ImportantFeatures = regmodel$ImpFeatures,
-            ImportantEK = c(opt_ek_imp, corr_ek_imp, conf_ek_imp),
+            ImportantEK = importantek,
             PropEKImp = prop_ek_imp,
-            OptionalEK = all_opt_ek,
-            ConfirmatoryEK = all_conf_ek,
-            RemovedEK = removed_ek, 
+            OptionalEK = opt_ek_in,
+            ConfirmatoryEK = conf_ek_in,
+            RemovedEK = removedek, 
             PropOptionalEK = prop_opt_ek, 
             PropEK = prop_all_ek)
     
@@ -402,7 +413,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     ##preparing test data set. Standardize linear terms Xtest
     if(!(is.null(all_linear_terms))){
       for(l in 1:length(all_linear_terms)){
-        Xtest[,all_linear_terms[l]] = (Xtest[,all_linear_terms[l]]-mul[l])/sdl[l]
+        Xtest[,all_linear_terms[l]] = 0.4*((Xtest[,all_linear_terms[l]]-mul[l])/sdl[l])
       }
     }
     
@@ -419,21 +430,30 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
       }
     }
     
+    
     # adapt column names
     if((intercept == TRUE) & (!(is.null(all_linear_terms)))){
-      colnames(X_test)[1] <- "X0"
-      colnames(X_test)[2:(length(all_linear_terms)+1)] <- paste("X", all_linear_terms, sep = "")
+      colnames(X_test)[1] <- "Intercept"
+      colnames(X_test)[2:(length(all_linear_terms)+1)] <- paste("X[,",all_linear_terms, "]", sep = "") 
       colnames(X_test)[(length(all_linear_terms)+2): ncol(X_test)] <- rulesFin
     } else if ((intercept == TRUE) & (is.null(all_linear_terms))){
-      colnames(X_test)[1] <- "X0"
+      colnames(X_test)[1] <- "Intercept"
       colnames(X_test)[2: ncol(X_test)] <- rulesFin
     } else if (intercept == FALSE & (!(is.null(all_linear_terms)))){
-      colnames(X_test)[1:length(all_linear_terms)] <- paste("X", all_linear_terms, sep = "")
+      colnames(X_test)[1:length(all_linear_terms)] <- paste("X[,",all_linear_terms, "]", sep = "")
       colnames(X_test)[(length(all_linear_terms)+1): ncol(X_test)] <- rulesFin
     } else{      
       colnames(X_test) <- rulesFin
     }
     
+    if(expert_only == T){
+      #print(colnames(X_test))
+      keep_all <- c(all_expert_rules, optional_linear_terms, confirmatory_linear_terms)
+      #print(keep_all)
+      keep_in <- names(X_test)[(names(X_test) %in% keep_all)]
+      #print(keep_in)
+      X_test <- subset(X_test, select = keep_in)
+    }
     
     # add prediction and error to model output
     regmodel = regularized_regression(X = Xt, y = y, Xtest = X_test,
@@ -456,55 +476,56 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     # optional EK among the most important features
     opt_ek <- c(optional_expert_rules, optional_linear_terms)
     opt_ek_imp <- contains(opt_ek, imp_features)
-    opt_ek_imp <- positions_to_names(X, opt_ek_imp)
     
     # Expert rules removed due to too low/high support on data
-    optional_expert_rules_names <- positions_to_names(X, optional_expert_rules)
-    unsup_expert_rules <- support_remove(optional_expert_rules_names, rbind.data.frame(X,y), minsup)
-    removed_expertrules_names <- positions_to_names(X, removed_expertrules)
+    opt_er_names <- positions_to_names(X, optional_expert_rules)
+    unsup_er <- support_remove(opt_er_names, rbind.data.frame(X,y), minsup)
+    unsup_er <- names_to_positions(X, unsup_er)
     
-    # Expert rules with perfect/very high correlation with data rules among most imp. features
-    corr_expert_rules <- setdiff(removed_expertrules_names, unsup_expert_rules)
-    imp_features_names <- positions_to_names(X, imp_features)
-    corr_ek_imp <- contains(corr_expert_rules, imp_features_names)
+    removed_as_unsup <- contains(unsup_er, removed_expertrules)
+    removed_as_corr <- setdiff(removed_expertrules, removed_as_unsup)
+    
     
     # confirmatory EK among the most important features
     conf_ek <- c(confirmatory_expert_rules, confirmatory_linear_terms)
-    conf_ek_imp <- contains(confirmatory_expert_rules, imp_features)
-    conf_ek_imp <- positions_to_names(X, conf_ek_imp)
+    conf_ek_imp <- contains(conf_ek, imp_features)
     
     # proportion of EK among most imp. features
-    prop_ek_imp <- length(c(opt_ek_imp, corr_ek_imp, conf_ek_imp))/n_imp
+    prop_ek_imp <- length(c(opt_ek_imp, conf_ek_imp))/n_imp
     
     # optional EK in the final model
-    all_opt_ek <- contains(opt_ek, model_features)
-    all_opt_ek <- c(all_opt_ek, corr_expert_rules)
-    all_opt_ek <- positions_to_names(X, all_opt_ek)
+    opt_ek_in <- contains(opt_ek, model_features)
     
     # confirmatory EK in the final model
-    all_conf_ek <- contains(conf_ek, model_features)
-    all_conf_ek <- positions_to_names(X, all_conf_ek)
+    conf_ek_in <- contains(conf_ek, model_features)
     
     # all EK in the final model
-    all_ek_in <- c(all_opt_ek, all_conf_ek)
+    all_ek_in <- c(opt_ek_in, conf_ek_in)
     
-    # EK removed due to too low/high support
-    removed_ek <- unsup_expert_rules
     
     # proportion of optional EK/EK among all EK/all features
-    prop_opt_ek <- length(all_opt_ek)/(regmodel$NTerms)
+    prop_opt_ek <- length(opt_ek_in)/(regmodel$NTerms)
     prop_all_ek <- length(all_ek_in)/(regmodel$NTerms)
     
     
     if(print_output == T){
       reg_info <- regression_output(X, Xtest, regmodel)
-      exp_info <- expert_output(opt_ek_imp, corr_ek_imp, conf_ek_imp, n_imp, 
-                                prop_ek_imp, all_opt_ek, all_conf_ek, removed_ek, 
-                                prop_opt_ek, prop_all_ek)
+      exp_info <- expert_output(X = X, opt_ek_imp = opt_ek_imp, conf_ek_imp = conf_ek_imp,
+                                n_imp = n_imp, prop_ek_imp = prop_ek_imp,
+                                opt_ek_in = opt_ek_in, conf_ek_in = conf_ek_in, 
+                                removed_as_unsup = removed_as_unsup,
+                                removed_as_corr = removed_as_corr,
+                                prop_opt_ek = prop_opt_ek, prop_all_ek = prop_all_ek)
       output <- list(reg_info, exp_info)
       
     }
     
+    regmodel$Results$features <- positions_to_names(X, regmodel$Results$features)
+    regmodel$ImpFeatures <- positions_to_names(X, regmodel$ImpFeatures)
+    importantek <- positions_to_names(X, c(opt_ek_imp, conf_ek_imp))
+    opt_ek_in <- positions_to_names(X, opt_ek_in)
+    conf_ek_in <- positions_to_names(X, conf_ek_in)
+    removedek <- positions_to_names(X, c(removed_as_unsup, removed_as_corr))
     
     out = list(Train = Xt, 
             Test = X_test,
@@ -518,11 +539,11 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
             AUC = regmodel$AUC, 
             ClassErr = regmodel$CE,
             ImportantFeatures = regmodel$ImpFeatures,
-            ImportantEK = c(opt_ek_imp, corr_ek_imp, conf_ek_imp),
+            ImportantEK = importantek,
             PropEKImp = prop_ek_imp,
-            OptionalEK = all_opt_ek,
-            ConfirmatoryEK = all_conf_ek,
-            RemovedEK = removed_ek, 
+            OptionalEK = opt_ek_in,
+            ConfirmatoryEK = conf_ek_in,
+            RemovedEK = removedek, 
             PropOptionalEK = prop_opt_ek, 
             PropEK = prop_all_ek)
    

@@ -176,7 +176,6 @@ pre1 <- pre_for_comparison(train, test)
 # funktioniert aktuell nicht
 # pre2 <- pre_for_comparison(train, test, conf = confirmatory_rules)
 
-
 performance_comparison <- modelcomp(erf1 = erf1, erf2 = erf2 , erf3 = erf3, 
                                     pre1 = pre1, pre2 = NULL, pre3 = NULL)
 #===============================================================================

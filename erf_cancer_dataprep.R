@@ -193,7 +193,6 @@ prepare_cervicalcancer_data <- function(data, del_maj_missing = T,
     data <- balanced
   }
   
-  
   # change column names to be unique to ERF 
   colnames(data)[which(names(data) == "Smokes")] <- "Smoking"
   colnames(data)[which(names(data) == "Hormonal.Contraceptives")] <- "Hormonal.contaceptives"

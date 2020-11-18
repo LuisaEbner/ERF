@@ -47,6 +47,8 @@ data <- read.csv(file = 'risk_factors_cervical_cancer.csv', header = T)
 # Preprocessing (see 'erf_cancer_dataprep.R')
 data <- prepare_cervicalcancer_data(data = data, balance = T)
 
+str(data)
+
 
 #===============================================================================
 #                        1.2. FACTUAL DOMAIN KNOWLEDGE
