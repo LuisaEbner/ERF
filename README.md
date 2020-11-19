@@ -3,6 +3,8 @@
 This repository includes the implementation of the ExpertRuleFit Model as proposed in the Master Thesis **Complementing Prediction Rule Ensembles with Expert Knowledge**. The model is based on the RuleFit model by Friedman and Popescu 
 (http://statweb.stanford.edu/~jhf/ftp/RuleFit.pdf)
 
+![Uploading ERF_stage12.png…]()
+
 **File Description:**
 
 The following 6 files are auxiliary files used to implement the ExpertRuleFit model:
