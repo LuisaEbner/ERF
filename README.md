@@ -1,9 +1,3 @@
----
-output:
-  md_document:
-    variant: markdown_github
----
-
 
 # ExpertRuleFit: Complementing Rule Ensembles with Expert Knowledge
 
@@ -49,12 +43,9 @@ To get a first impression of how the function `ExpertRuleFit()` works, a short i
 
 ## Example: Predicting Diabetes
 
-The **Diabetes data** stored as *diabetes.csv* and was loaded from the UCI Machine Learning Repository.
-The dataset was preprocessed to be applicable to the ExpertRuleFit model in the file *erf_diabetes_dataprep.R*.
 
 **Data.** The Pima Indian Diabetes (PID) data set loaded from the UCI Machine Learning Repository
-results from a survey taken out by the National Institute of Diabetes and Digestive and Kidney Diseases. Recorded information regards a 768 adult women sampled from the Pima Indian population in Arizona.
-The binary target *diabetes* was diagnosed according to the WHO criteria regarding glucose
+results from a survey taken out by the National Institute of Diabetes and Digestive and Kidney Diseases. Recorded information regards a 768 adult women sampled from the Pima Indian population in Arizona. The binary target *diabetes* was diagnosed according to the WHO criteria regarding glucose
 concentrations in different medical test settings. Eight numeric attributes were included as significant risk factors for an onset of
 diabetes. There are: *Pregnancies, Glucose, BP, SkinThickness, Insulin, BMI, DPF* and *Age*.
 
@@ -64,7 +55,7 @@ source("./experiments/diabetes/erf_diabetes_dataprep.R")
 source("./ERF/erf_main.R")
 
 data <- read.csv(file = './data sets/diabetes.csv', header = T)
-data <- prepare_diabetes_data(data)
+data <- prepare_diabetes_data(data) 
 
 head(data)
 
@@ -121,7 +112,7 @@ expert_interview_terms <- c("BMI", "Age", "DPF")
 
 Thus we specify the ERF model as follows:
 
-```{r}
+```{r, results = TRUE}
 
 erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                               optional_expert_rules = guideline_rules2, 
@@ -132,10 +123,24 @@ erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
 
 ```
 
-The first few lines of the printed results provide the penalty parameter value ($\lambda$) employed for selecting the final ensemble. By default, the '1-SE' rule is used for selecting $\lambda$, the number of base classifiers (rules + linear terms) used in the final model as well as the average number of conditions per rule.
+The first few lines of the printed results provide the penalty parameter value lambda employed for selecting the final ensemble. By default, the '1.se' rule is used for selecting\lambda, the number of base classifiers (rules + linear terms) used in the final model as well as the average number of conditions per rule.
 
 Next, the printed results provide the rules and linear terms selected in the final ensemble, with their estimated coefficients. For rules, the `description` column provides the conditions. The `coefficient` column presents the estimated coefficient. These are regression coefficients, reflecting the expected increase in the response for a unit increase in the predictor, keeping all other predictors constant. For rules, the coefficient thus reflects the difference in the expected value of the response when the conditions of the rule are met, compared to when they are not. Accordingly, the most important 10 rules and linear terms are listed in the model output.
 
 The remaining part of the output relates to expert knowledge and thereby distinguishes between confirmatory and optional EK. While the confirmatory part appears safe in the final model, optional EK is either penalised in the same way as the rules from the data set, or is somewhat favoured by the parameter `optional_penalty`. This can be of judgement. Finally, unlike expert rules, the data rules can also learn noise to increase accuracy.
 
 With the dollar access, various additional information can be retrieved from the object `diabetes.erf` of the 'ExpertRuleFit' class.
+
+Finally, using the parameter selection 'expert_only = T' it is possible to learn an ERF ensemble solely on the basis of the specified expert knowledge in order to see how well and in which interaction the EC diagnoses diabetes best.
+
+```{r, results = TRUE}
+
+erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
+                              optional_expert_rules = guideline_rules2, 
+                              confirmatory_expert_rules = c(guideline_rules1, expert_interview_rules),  
+                              optional_linear_terms= guideline_terms
+                              confirmatory_linear_terms = expert_interview_terms,
+                              expert_only = T, print_output = T)
+
+```
+
