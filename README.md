@@ -1,119 +1,141 @@
-# The ExpertRuleFit model (ERF) 
-
-This repository includes the implementation of the ExpertRuleFit Model as proposed in the Master Thesis **Complementing Prediction Rule Ensembles with Expert Knowledge**. The model is based on the RuleFit model by Friedman and Popescu 
-(http://statweb.stanford.edu/~jhf/ftp/RuleFit.pdf)
-
-![Uploading ERF_stage12.png…]()
-
-**File Description:**
-
-The following 6 files are auxiliary files used to implement the ExpertRuleFit model:
- * take1.R
- * createX.R
- * create_test.R
- * genrulesrf.R
- * genrulesgbm.R
- * erf_auxiliaries.R
-
-The main file for model implementation is *erf_main.R*
-
-In the Experiments section of the thesis, we are using 3 different data sources:
-
-1. Simulated Data + Simulated Expert Knowledge
-2. The UCI Dataset *Diabetes Pima Indians* + Medical Guideline Knowledge
-3. The UCI Dataset *Cervical Cancer (Risk Factors)* + Medical Guideline Knowledge
-
-
-The data simulation is implemented in the file *simulation.R* using auxiliary functions implemented in
-*simulation_auxiliaries.R*.
-
-Experiments with the **Simulated data** may be found in:
-
-* erf_simulation.R
-* modelcomp_simulation.R
-* modelcomp_main.R.
-
-The **Diabetes data** is stored as *diabetes.csv* and was loaded from the UCI Machine Learning Repository.
-The dataset was preprocessed to be applicable to the ExpertRuleFit model in the file *erf_diabetes_dataprep.R*.
-Experiments with the diabetes data may be found in:
-
-* erf_diabetes.R
-* modelcomp_diabetes.R
-* modelcomp_main.R
-
-
-The **Cervical Cancer data** is stored as *risk_factors_cervical_cancer.csv* in this repository and was directly loaded from the UCI Machine Learning Repository.
-The dataset was preprocessed to be applicable to the ExpertRuleFit model in the file *erf_cancer_dataprep.R*.
-Experiments with the cancer data may be found in:
-
-
-* erf_cancer.R
-* modelcomp_cancer.R
-* modelcomp_main.R
-
-
-The file *modelcomp_main.R* contains a function with which the ERF model without expert knowledge, with optional expert knowledge and with confirmatory expert knowledge are compared according to the number or terms, the average rule length, the AUC and Classification Error and the usage of Expert knowledge in the final model and among its most important features.
-Additionally, all ERF model results are compared to the corresponding PRE model, a RuleFit implementation by Maroleijn Fokkema ( https://github.com/marjoleinF/pre).
-
-Finally, the file *anova_expertknowledge.R* analyses the amount of variance explained by each rule or linear term within the expert knowledge inserted to the ExpertRuleFit model.
-
-################################################################################################################################
-
 ---
 output:
   md_document:
     variant: markdown_github
-bibliography: README.bib
-csl: inst/bib_style.csl
 ---
 
-# Expert RuleFit (ERF): Complementing Rule Ensembles with Expert Knowledge
 
-```{r, echo = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.path = "inst/README-figures/README-",
-  dpi = 124
-)
-```
+# ExpertRuleFit: Complementing Rule Ensembles with Expert Knowledge
 
-**ExpertRuleFit** is an **R**-based implementation for deriving rule ensembles for binary responses. Input variables may be numeric, ordinal and categorical. An extensive description of the implementation and functionality is provided in the respective MSc. Thesis *Expert RuleFit - Complementing Rule Ensembles with Expert Knowledge*. The function largely implements the RuleFit algorithm proposed by Friedman and Popescu [@Friedman08], with the following adjustments: 
+This repository includes the implementation of the ExpertRuleFit model proposed in the Master Thesis **Expert RuleFit - Complementing Rule Ensembles with Expert Knowledge**. 
+Expert RuleFit is a novel machine learning model for binary classification that allows for a specified integration of expert knowledge in form of rules and linear terms, which may be specified as confirmatory or optional respecitvely. 
 
-1) The implementation is completely **R** based, allowing users better access to the results and more control over the parameters used for generating the prediction rule ensemble.
-2) The unbiased tree induction algorithms of [@Hothorn06] is used for deriving prediction rules, by default. Alternatively, the (g)lmtree algorithm of [@Zeileis08] can be employed, or the classification and regression tree (CART) algorithm of [@Breiman84].
-3) The package supports a wider range of response variable types.
-5) The initial ensembles may be generated as in bagging, boosting and/or random forests.
-6) Hinge functions of predictor variables may be included as baselearners, as in the multivariate adaptive regression splines method of [@Friedman91], using function `gpe()`.
+ERF is based on the RuleFit method proposed by Friedman and Popescu in 2008.
+Within RuleFit, a large initial ensemble of candidate rules is generated from a boosted tree ensemble. Subsequently, the same are applied together with linear terms as base classifiers in a L1-regularized regression to specify model coefficients for the final ensemble and remove unimportant base classifiers.
+Competitive, state-of-the-art performance at a comparatively high level of interpretability promote the use of RuleFit in the context of medical classification tasks, such as diagnosis. Limitations arise from overfitting and high model complexity.
 
-Below, a short introductory example is provided. [@Fokkema20] provides an extensive description of the fitting procedures implemented in function `pre()` and example analyses with more extensive explanations. 
+For the purpose of accurate, yet interpretable decision support in medical classification
+tasks, ERF modifies and extends RuleFit with the following adjustments:
 
+1) The implementation is completely **R** based, allowing better access to results and more control over parameters used to generate the prediction model.
+2) The initial tree ensembles may be generated mixing random forest and gradient boosting instead of gradient boosting only.
+2) Regularization is formulated according to the elastic net instead of Lasso only, such that flexible combinations of Ridge an Lasso are built-in alternatives. Glmnet is used for implementation.
+3) ERF applies adaptive regularization, where adaptive weigths allow for a customized penalization of optional expert knowledge (EK) and an expemtion from penalization for confirmatory EK.
+4) ERF may be specified as to contain only expert rules and -linear terms to assess the predictive accuracy of EK alone together with respective ciefficients as measures of the degree and direction of predictive influence.
 
-## Example: Predicting Diabetes 
+The exploitation of expert knowledge/reasoning and training examples as complementary information sources makes ER 
 
-To get a first impression of how the function `ExpertRuleFit()` works, we will fit an ERF model to predict diabetes using the `Pima Indian Diabetes` dataset from the UCI Machine Learning Repository:
+1) more generalizable (robust to concept drifts),
+2) data-efficient (robust to small training sets) and
+3) interpretable (decreased model complexity, increased human involvement, increased classifier acceptance)
+
+The basic usage and default settings of the ExpertRuleFit function are as follows:
 
 ```{r, results = FALSE}
-library("pre")
-airq <- airquality[complete.cases(airquality), ]
+
+createERFsets(data, train_frac)
 set.seed(42)
-airq.ens <- pre(Ozone ~ ., data = airq)
+diabetes.erf <- ExpertRuleFit(X, y, Xtest = NULL, ytest = NULL, intercept=T,
+                              optional_expert_rules = NULL, confirmatory_expert_rules = NULL,
+                              optional_linear_terms = NULL, confirmatory_linear_terms = NULL,
+                              optional_penalty = NULL, ntree=250, ensemble= "GBM", mix=0.5, L=3, S=6,
+                              minsup=.025, corelim = 1, n_imp = 10, print_output = T, ...)
 ```
 
-Note that it is necessary to set the random seed, to allow for later replication of the results, because the fitting procedure depends on random sampling of training observations. 
+\texttt{X} and \texttt{y} are the only mandatory arguments, the remaining arguments are optional.
+A detailed description of the parameters can be found in the main file 'erf_main' in the folder ERF.
 
-We can print the resulting ensemble (alternatively, we could use the `print` method): 
+To get a first impression of how the function `ExpertRuleFit()` works, a short introductory example is provided regarding the prediction of Diabetes. An extensive description of the fitting procedure and example analyses with more extensive explanations can be found in the folders **ERF** and **experiments**, as well as the respective MSc. thesis.
+
+## Example: Predicting Diabetes
+
+The **Diabetes data** stored as *diabetes.csv* and was loaded from the UCI Machine Learning Repository.
+The dataset was preprocessed to be applicable to the ExpertRuleFit model in the file *erf_diabetes_dataprep.R*.
+
+**Data.** The Pima Indian Diabetes (PID) data set loaded from the UCI Machine Learning Repository
+results from a survey taken out by the National Institute of Diabetes and Digestive and Kidney Diseases. Recorded information regards a 768 adult women sampled from the Pima Indian population in Arizona.
+The binary target *diabetes* was diagnosed according to the WHO criteria regarding glucose
+concentrations in different medical test settings. Eight numeric attributes were included as significant risk factors for an onset of
+diabetes. There are: *Pregnancies, Glucose, BP, SkinThickness, Insulin, BMI, DPF* and *Age*.
 
 ```{r}
-airq.ens
+
+source("./experiments/diabetes/erf_diabetes_dataprep.R")
+source("./ERF/erf_main.R")
+
+data <- read.csv(file = './data sets/diabetes.csv', header = T)
+data <- prepare_diabetes_data(data)
+
+head(data)
+
 ```
 
-The firest few lines of the printed results provide the penalty parameter value ($\lambda$) employed for selecting the final ensemble. By default, the '1-SE' rule is used for selecting $\lambda$; this default can be overridden by employing the `penalty.par.val` argument of the `print` method and other functions in the package. Note that the printed cross-validated error is calculated using the same data as was used for generating the rules and likely provides an overly optimistic estimate of future prediction error. To obtain a more realistic prediction error estimate, we will use function ```cvpre()``` later on.
+**Expert Knowledge** Factual medical expert knowledge may be extracted from textbooks, 
+clinical practice guidelines and expert interviews/assessments. For this example we use EK from the medical guideline *Standards of Medical Care in Diabetes - 2019 (SMCD)* published by the American Diabetes Association as well as the German guideline *Nationale Versorgungs-Leitlinie - Diabetes mellitus Typ 2 (NVLDM)*
 
-Next, the printed results provide the rules and linear terms selected in the final ensemble, with their estimated coefficients. For rules, the `description` column provides the conditions. For linear terms (which were not selected in the current ensemble), the winsorizing points used to reduce the influence of outliers on the estimated coefficient would be printed in the `description` column. The `coefficient` column presents the estimated coefficient. These are regression coefficients, reflecting the expected increase in the response for a unit increase in the predictor, keeping all other predictors constant. For rules, the coefficient thus reflects the difference in the expected value of the response when the conditions of the rule are met, compared to when they are not.
+```{r, results = FALSE}
 
-Using the `plot` method, we can plot the rules in the ensemble as simple decision trees. Here, we will request the nine most important baselearners through specification of the `nterms` argument. Through the `cex` argument, we specify the size of the node and path labels:
+# confirmatory expert rules (1)
+guideline_rules1 <- c("Age<=39 & BP<=80 & BMI<25",
+                                  "Age<=39 & BP<=80 & BMI>=25 & BMI<=30",
+                                  "Age<=39 & BP<=80 & BMI>=31 & BMI<=40",         
+                                  "Age>=40 & Age<=49 & BP<=80 & BMI>=31 & BMI<=40",
+                                  "Age<=39 & BP>=81 & BMI>=31 & BMI<=40",
+                                  "Age<=39 & BP<=80 & BMI>40",
+                                  "Glucose<=100", "Glucose>100 & Glucose<=110",
+                                  "Glucose>110", "BP<=85", "BP>85 & BP<=90", 
+                                  "BMI<=24", "BMI<24 & BMI<=26", "BMI>26",
+                                  "Glucose>110 & BMI>26")
+                                  
+# optional expert rules                              
+guideline_rules2 <- c("Age>=50 & Age<=59 & BP>=81 & BMI>=25 & BMI<=30",
+                              "Age>=50 & Age<=59 & BP<=80 & BMI>=31 & BMI<=40",
+                              "Age>=60 & BP<=80 & BMI>=31 & BMI<=40",
+                              "Age>=50 & Age<=59 &  BP>=81 & BMI>40", "BP>90"                                         
+                              "Glucose>110 & BP>90", "BP>90 & BMI>26")
 
+# optional expert linear terms                            
+guideline_terms <-  c("BP", Glucose")
 
+```
 
-# References
+Further expert knowledge stems from personal interviews with practicing doctors as:
+
+```{r, results = FALSE}
+
+# confirmatory expert rules (2)
+expert_interview_rules <- c("Age<=42 & BP<=80 & BMI<=29",
+                         "Age>=45 & BP>=90 & Glucose>=125",
+                         "Age<=31 & BP>=90 & BMI>=38",
+                         "Age>=55 & BP<=80 & BMI<=29",
+                         "Age>=60 & Glucose>=130 & BMI>=35", 
+                         "Age>=60 & BP>=90 & BMI>=37",
+                         "Age>=45 & BP>=90 & BMI>=35 & Glucose>=130",
+                         "Age>=55 & BP<=90 & BMI<=30 & Glucose>=130",
+                         "Age<=60 & BP<=90 & BMI<=30 & Glucose<=100")
+
+# confirmatory linear terms
+expert_interview_terms <- c("BMI", "Age", "DPF")
+
+```
+
+Thus we specify the ERF model as follows:
+
+```{r}
+
+erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
+                              optional_expert_rules = guideline_rules2, 
+                              confirmatory_expert_rules = c(guideline_rules1, expert_interview_rules),  
+                              optional_linear_terms= guideline_terms
+                              confirmatory_linear_terms = expert_interview_terms,
+                              optional_penalty = 0.8, print_output = T)
+
+```
+
+The first few lines of the printed results provide the penalty parameter value ($\lambda$) employed for selecting the final ensemble. By default, the '1-SE' rule is used for selecting $\lambda$, the number of base classifiers (rules + linear terms) used in the final model as well as the average number of conditions per rule.
+
+Next, the printed results provide the rules and linear terms selected in the final ensemble, with their estimated coefficients. For rules, the `description` column provides the conditions. The `coefficient` column presents the estimated coefficient. These are regression coefficients, reflecting the expected increase in the response for a unit increase in the predictor, keeping all other predictors constant. For rules, the coefficient thus reflects the difference in the expected value of the response when the conditions of the rule are met, compared to when they are not. Accordingly, the most important 10 rules and linear terms are listed in the model output.
+
+The remaining part of the output relates to expert knowledge and thereby distinguishes between confirmatory and optional EK. While the confirmatory part appears safe in the final model, optional EK is either penalised in the same way as the rules from the data set, or is somewhat favoured by the parameter `optional_penalty`. This can be of judgement. Finally, unlike expert rules, the data rules can also learn noise to increase accuracy.
+
+With the dollar access, various additional information can be retrieved from the object `diabetes.erf` of the 'ExpertRuleFit' class.
