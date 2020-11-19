@@ -20,7 +20,7 @@ library(ROCR)
 library(mice)
 library(cvAUC)
 
-# Functions
+# Functions 
 # 1. create_X_y_Xtest_ytest
 # 2. names_to_positions
 # 3. positions_to_names
@@ -34,6 +34,14 @@ library(cvAUC)
 # 11. support_remove
 # 12. support_take
 # 13. modelcomp
+
+# + Functions adopted from the MSc. Thesis of Malte Nalenz
+
+# 1. take1
+# 2. genrulesRF
+# 3. genrulesGBM
+# 4. createX
+# 5. createXtest
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -271,16 +279,25 @@ imp_terms <- function(model, n){
 regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                                    s = "lambda.min",
                                    confirmatory_cols =NULL, 
+                                   optional_cols = NULL,
+                                   optional_penalty = 1,
                                    alpha = 1, standardize = F, 
                                    n = 5, print_output = T){
   
   
-  # define penalties according to confirmatory columns
-  if(length(confirmatory_cols) == 0){
-    p.fac = rep(1, ncol(X))
-  }else{
+  # define penalties according to confirmatory and optional columns
+  if(length(confirmatory_cols) > 0 & length(optional_cols) > 0){
     p.fac = rep(1, ncol(X))
     p.fac[confirmatory_cols] <- 0
+    p.fac[optional_cols] <- optional_penalty
+  } else if(length(confirmatory_cols) >0 & length(optional_cols) == 0){
+    p.fac = rep(1, ncol(X))
+    p.fac[confirmatory_cols] <- 0
+  } else if(length(confirmatory_cols) == 0 & length(optional_cols) > 0){
+    p.fac = rep(1, ncol(X))
+    p.fac[optional_cols] <- optional_penalty
+  } else{
+    p.fac = rep(1, ncol(X))
   }
   
   # find best lambda via cross validation
@@ -664,4 +681,120 @@ modelcomp <- function(erf1, erf2 = NULL , erf3 = NULL,
   out
   
 }
+
+################################################################################
+
+# Auxiliary functions implemented by my supervisor Malte Nalenz in the 
+# for his own MSc. Thesis:
+
+# 1. take1
+# 2. genrulesRF
+# 3. genrulesGBM
+# 4. createX
+# 5. createXtest
+
+take1 = function(len) {
+  draw = c()
+  for(i in 1:(len/2)){
+    draw[[i]] = sample(1:2)
+  }
+  
+  keep  = which(unlist(draw) == 1)
+  keep
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#' @importFrom randomForest randomForest
+#' @importFrom randomForest combine
+#' @import inTrees
+
+genrulesRF = function(X, y, nt,S ,L){
+  N      = dim(X)[1]
+  sf     = min(1, (11*sqrt(N)+1)/N)
+  mn     = L*2
+  ns     = S
+  forest = randomForest(x = X, y=y, sampsize = sf*N, replace=F, ntree =nt, maxnodes=mn, nodesize = ns)
+  
+  treelist = RF2List(forest)
+  rules    = lapply(1:L, function(d)as.character(extractRules(treeList=treelist, X=X, ntree=nt, maxdepth=d)))
+  rules    = unique(unlist(rules))
+  rules    = rules[take1(length(rules))]
+  rulesmat = matrix(rules)
+  colnames(rulesmat) = "condition"
+  metric   = getRuleMetric(rulesmat,X,y)
+  pruned   = pruneRule(metric, X, y, 0.025, typeDecay = 1)
+  unique(pruned[,4])
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#' @import gbm
+#' @import inTrees
+
+
+genrulesGBM = function(X, y, nt, S, L) {
+  N = dim(X)[1]
+  sf = min(1, (11*sqrt(N)+1)/N)
+  ns = S
+  dist = ifelse(is.numeric(y), "gaussian", "bernoulli")
+  if (is.numeric(y)==F){
+    y = as.numeric(y)-1
+  }
+  model1 = gbm.fit(x = X, y=y, bag.fraction = sf, n.trees =nt, interaction.depth = L
+                   , shrinkage = 0.01, distribution = dist, verbose = F, n.minobsinnode = ns)
+  
+  treelist = GBM2List(model1, X)
+  rules    = lapply(1:L, function(d)as.character(extractRules(treeList=treelist, X=X, ntree=nt, maxdepth=d)))
+  rules    = unique(unlist(rules))
+  rules    = rules[take1(length(rules))]
+  rulesmat = matrix(rules)
+  colnames(rulesmat) = "condition"
+  metric = getRuleMetric(rulesmat,X,y)
+  pruned = pruneRule(metric, X, y, 0.025, typeDecay = 1)
+  unique(pruned[,4])
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+createX = function(X, rules, t, corelim=1){
+  Xr = matrix(0, nrow=dim(X)[1], ncol=length(rules))
+  for (i in 1:length(rules)){
+    Xr[eval(parse(text = rules[i])),i] = 1
+  }
+  
+  Nr = dim(Xr)[2]
+  ind = 1:Nr
+  if(dim(X)[1]<200){
+    t= 0.05
+  }
+  
+  sup  = apply(Xr, 2, mean)
+  elim = which((sup<t)|(sup>(1-t)))
+  
+  if(length(elim)>0){
+    ind = ind[-elim]
+  }
+  
+  cMat      = abs(cor(Xr[,ind])) >= (corelim)
+  whichKeep = which(rowSums(lower.tri(cMat) * cMat) == 0)
+  
+  ind = ind[whichKeep]
+  Xr = Xr[,ind]
+  rules = rules[ind]
+  list(data.matrix(Xr), rules)
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+createXtest = function(X, rules) {
+  Xr = matrix(0, nrow=dim(X)[1], ncol=length(rules))
+  for (i in 1:length(rules)){
+    Xr[eval(parse(text = rules[i])),i] = 1
+  }
+  data.matrix(Xr)
+}
+
+################################################################################
 

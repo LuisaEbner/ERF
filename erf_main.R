@@ -23,16 +23,10 @@ library(mlbench)
 library(Metrics)
 
 
-# External functions implemented by Luisa Ebner
+# External functions 
 source("simulation.R")
 source("erf_auxiliaries.R")
 
-# External functions implemented by Malte Nalenz
-source("take1.R")
-source("genrulesgbm.R")
-source("genrulesrf.R")
-source("createX.R")
-source("create_test.R")
 
 # THE EXPERT RULEFIT IMPLEMENTATION
 
@@ -47,7 +41,7 @@ source("create_test.R")
 #' @param confirmatory_expert_rules specifies a character vector of expert-derived rules to certainly be included as base classifiers in the final model. No penalty will be applied to the respective coefficients, which will yield a non-zero coefficient for the rule in the final model.
 #' @param expert_linear_terms specifies a character vector of expert-derived predictor attributes to be included as candidate base learners in the final model.
 #' @param confirmatory_linear_terms specifies a character vector of expert-derived predictor attributes to certainly be included as base learners in the final model. No penalty will be applied to the respective coefficients, which will yield a non-zero coefficient for the linear term in the final model.
-#' @param optional_penalty specifies the penalty factor applied to all optional_expert_rulesand optional_linear_terms as a real value between 0 and 1.  May be used toprevent preference for data rules whose predictive relevance may partly resultfrom modeling noise in the data set.
+#' @param optional_penalty specifies the penalty factor applied to all optional_expert_rules and optional_linear_terms as a real value between 0 and 1.  May be used toprevent preference for data rules whose predictive relevance may partly resultfrom modeling noise in the data set.
 #' @param expert_only specifies whether ONLY Expert rules and -linear terms should be included as candidates to the final model.
 #' @param ntree specifies the number of trees in the ensemble step from which data rules are extracted.
 #' @param ensemble specifies whether gradient boosting ("GBM"), random forest ("RF") or a mixture of both ("both") shall be employed to generate the tree ensemble.
@@ -86,8 +80,9 @@ source("create_test.R")
 
 ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                          optional_expert_rules = NULL, confirmatory_expert_rules = NULL,  
-                         optional_linear_terms=NULL, confirmatory_linear_terms = NULL, expert_only = F,
-                         ntree=250, ensemble= "GBM", mix=0.5, L=3, S=6, minsup=.025, corelim = 1, 
+                         optional_linear_terms=NULL, confirmatory_linear_terms = NULL,
+                         expert_only = F, optional_penalty = 1, ntree=250, 
+                         ensemble= "GBM", mix=0.5, L=3, S=6, minsup=.025, corelim = 1, 
                          alpha = 1, s = "lambda.1se", standardize = F,
                          n_imp = 10, print_output = T) {
   
@@ -313,11 +308,36 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
   }
   
   
+  # get the column indices of the optional terms
+  if((!(is.null(optional_expert_rules))) & (!(is.null(optional_linear_terms)))){
+    optional_terms <- c(optional_expert_rules, optional_linear_terms)
+  } else if ((is.null(optional_expert_rules)) & (!(is.null(optional_linear_terms)))){
+    optional_terms <- optional_linear_terms
+  } else if ((!(is.null(optional_expert_rules))) & (is.null(optional_linear_terms))){
+    optional_terms <- optional_expert_rules
+  } else {
+    optional_terms <- NULL
+  }
+  
+  if(!(is.null(optional_terms))){
+    optional_cols <- c()
+    for(i in 1: length(optional_terms)){
+      if(optional_terms[i] %in% colnames(Xt)){
+        optional_cols <- c(optional_cols, which(colnames(Xt) == optional_terms[i]))
+      }
+    }
+  } else{
+    optional_cols <- NULL
+  }
+  
+  
   
   if(is.null(Xtest) == T){
     regmodel = regularized_regression(X=Xt, y=y, Xtest = NULL, ytest =NULL,
                                       s = s,
                                       confirmatory_cols = confirmatory_cols,
+                                      optional_cols = optional_cols,
+                                      optional_penalty = optional_penalty,
                                       alpha = alpha, standardize = standardize,
                                       n = n_imp,
                                       print_output = print_output)
@@ -460,6 +480,8 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                                       ytest = ytest, 
                                       s = s,
                                       confirmatory_cols = confirmatory_cols,
+                                      optional_cols = optional_cols,
+                                      optional_penalty = optional_penalty,
                                       alpha = alpha,
                                       standardize = standardize, n = n_imp,
                                       print_output = print_output)
