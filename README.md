@@ -1,5 +1,6 @@
 
-# ExpertRuleFit: Complementing Rule Ensembles with Expert Knowledge
+# ExpertRuleFit -
+## Complementing Rule Ensembles with Expert Knowledge
 
 This repository includes the implementation of the ***ExpertRuleFit (ERF)*** model proposed in the Master Thesis **Expert RuleFit - Complementing Rule Ensembles with Expert Knowledge**. ERF is a novel machine learning model for binary classification that allows for a specified integration of expert knowledge in form of rules and linear terms.
 
