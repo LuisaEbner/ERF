@@ -24,7 +24,7 @@ library(Metrics)
 
 
 # External functions 
-source("simulation.R")
+source("../data simulation/simulation_main.R")
 source("erf_auxiliaries.R")
 
 

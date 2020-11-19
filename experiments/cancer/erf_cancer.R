@@ -19,8 +19,8 @@ library(ROCR)
 library(mice)
 
 # External functions
-source("erf_cancer_dataprep.R")
-source("erf_main.R")
+source("./experiments/cancer/erf_cancer_dataprep.R")
+source("./ERF/erf_main.R")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -42,7 +42,7 @@ source("erf_main.R")
 #===============================================================================
 
 # Cervical Cancer (Risk Factors) dataset available from the UCI ML Repository
-data <- read.csv(file = 'risk_factors_cervical_cancer.csv', header = T)
+data <- read.csv(file = './data sets/risk_factors_cervical_cancer.csv', header = T)
 
 # Preprocessing (see 'erf_cancer_dataprep.R')
 data <- prepare_cervicalcancer_data(data = data, balance = F)

@@ -26,8 +26,8 @@
 #library(Metrics)
 
 # External functions
-source("simulation.R")
-source("erf_main.R")
+source("./data simulation/simulation_main.R")
+source("./ERF/erf_main.R")
 
 #===============================================================================
 #                               SIMULATION

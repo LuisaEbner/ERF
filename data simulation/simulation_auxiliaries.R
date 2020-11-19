@@ -8,9 +8,6 @@
 library(purrr)
 library(rlist)
 
-# External functions
-source("createX.R")
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Functions

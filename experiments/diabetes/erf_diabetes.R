@@ -7,8 +7,8 @@
 ################################################################################
 
 # External functions
-source("erf_diabetes_dataprep.R")
-source("erf_main.R")
+source("./experiments/diabetes/erf_diabetes_dataprep.R")
+source("./ERF/erf_main.R")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -32,7 +32,7 @@ source("erf_main.R")
 
 ## Pima Indian Diabetes dataset available from UCI ML Repository.
 ## http://archive.ics.uci.edu/ml/datasets/Pima+Indians+Diabetes
-data <- read.csv(file = 'diabetes.csv', header = T)
+data <- read.csv(file = './data sets/diabetes.csv', header = T)
 
 # Data Preprocessing (see file 'erf_diabetes_dataprep.R')
 data <- prepare_diabetes_data(data)

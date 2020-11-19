@@ -10,8 +10,8 @@ library(purrr)
 library(rlist)
 
 # external functions
-source('simulation_auxiliaries.R')
-source('erf_auxiliaries.R')
+source('./data simulation/simulation_auxiliaries.R')
+source('./ERF/erf_auxiliaries.R')
 
 
 #' @name create_simulation
