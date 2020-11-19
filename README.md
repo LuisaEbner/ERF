@@ -1,12 +1,9 @@
 
 # ExpertRuleFit: Complementing Rule Ensembles with Expert Knowledge
 
-This repository includes the implementation of the ExpertRuleFit model proposed in the Master Thesis **Expert RuleFit - Complementing Rule Ensembles with Expert Knowledge**. 
-Expert RuleFit is a novel machine learning model for binary classification that allows for a specified integration of expert knowledge in form of rules and linear terms, which may be specified as confirmatory or optional respecitvely. 
+This repository includes the implementation of the ***ExpertRuleFit (ERF)*** model proposed in the Master Thesis **Expert RuleFit - Complementing Rule Ensembles with Expert Knowledge**. ERF is a novel machine learning model for binary classification that allows for a specified integration of expert knowledge in form of rules and linear terms.
 
-ERF is based on the RuleFit method proposed by Friedman and Popescu in 2008.
-Within RuleFit, a large initial ensemble of candidate rules is generated from a boosted tree ensemble. Subsequently, the same are applied together with linear terms as base classifiers in a L1-regularized regression to specify model coefficients for the final ensemble and remove unimportant base classifiers.
-Competitive, state-of-the-art performance at a comparatively high level of interpretability promote the use of RuleFit in the context of medical classification tasks, such as diagnosis. Limitations arise from overfitting and high model complexity.
+ERF is based on the RuleFit method proposed by Friedman and Popescu in 2008. Within RuleFit, a large initial ensemble of candidate rules is generated from a boosted tree ensemble. Subsequently, the same are applied together with linear terms as base classifiers in a L1-regularized regression to specify model coefficients for the final ensemble and remove unimportant base classifiers. Competitive state-of-the-art performance and a comparatively high level of interpretability promote the use of RuleFit in the context of medical classification tasks, such as diagnosis. Limitations arise from overfitting and high model complexity.
 
 For the purpose of accurate, yet interpretable decision support in medical classification
 tasks, ERF modifies and extends RuleFit with the following adjustments:
@@ -36,18 +33,15 @@ diabetes.erf <- ExpertRuleFit(X, y, Xtest = NULL, ytest = NULL, intercept=T,
                               minsup=.025, corelim = 1, n_imp = 10, print_output = T, ...)
 ```
 
-\texttt{X} and \texttt{y} are the only mandatory arguments, the remaining arguments are optional.
-A detailed description of the parameters can be found in the main file 'erf_main' in the folder ERF.
+X and y are the only mandatory arguments, the remaining arguments are optional. A detailed description of the parameters can be found in the main file `erf_main` in the folder `ERF`.
 
-To get a first impression of how the function `ExpertRuleFit()` works, a short introductory example is provided regarding the prediction of Diabetes. An extensive description of the fitting procedure and example analyses with more extensive explanations can be found in the folders **ERF** and **experiments**, as well as the respective MSc. thesis.
+To get a first impression of how the function `ExpertRuleFit()` works, a short introductory example is provided regarding the prediction of Diabetes. An extensive description of the fitting procedure and example analyses with more extensive explanations can be found in the folders `ERF` and `experiments`, as well as the respective MSc. thesis.
 
 ## Example: Predicting Diabetes
 
-
-**Data.** The Pima Indian Diabetes (PID) data set loaded from the UCI Machine Learning Repository
-results from a survey taken out by the National Institute of Diabetes and Digestive and Kidney Diseases. Recorded information regards a 768 adult women sampled from the Pima Indian population in Arizona. The binary target *diabetes* was diagnosed according to the WHO criteria regarding glucose
+**Data.** The Pima Indian Diabetes (PID) data set is available from the UCI Machine Learning Repository. Recorded information regards a 768 adult women sampled from the Pima Indian population in Arizona. The binary target *diabetes* was diagnosed according to the WHO criteria regarding glucose
 concentrations in different medical test settings. Eight numeric attributes were included as significant risk factors for an onset of
-diabetes. There are: *Pregnancies, Glucose, BP, SkinThickness, Insulin, BMI, DPF* and *Age*.
+diabetes. These are: *Pregnancies, Glucose, BP, SkinThickness, Insulin, BMI, DPF* and *Age*.
 
 ```{r}
 
@@ -110,7 +104,7 @@ expert_interview_terms <- c("BMI", "Age", "DPF")
 
 ```
 
-Thus we specify the ERF model as follows:
+Thus, we specify the ERF model as:
 
 ```{r, results = TRUE}
 
@@ -123,15 +117,15 @@ erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
 
 ```
 
-The first few lines of the printed results provide the penalty parameter value lambda employed for selecting the final ensemble. By default, the '1.se' rule is used for selecting\lambda, the number of base classifiers (rules + linear terms) used in the final model as well as the average number of conditions per rule.
+The first few lines of the printed results provide the penalty parameter value lambda employed for selecting the final ensemble. By default, the '1.se' rule is used for selecting lambda, the number of base classifiers (rules + linear terms) used in the final model as well as the average number of conditions per rule.
 
 Next, the printed results provide the rules and linear terms selected in the final ensemble, with their estimated coefficients. For rules, the `description` column provides the conditions. The `coefficient` column presents the estimated coefficient. These are regression coefficients, reflecting the expected increase in the response for a unit increase in the predictor, keeping all other predictors constant. For rules, the coefficient thus reflects the difference in the expected value of the response when the conditions of the rule are met, compared to when they are not. Accordingly, the most important 10 rules and linear terms are listed in the model output.
 
 The remaining part of the output relates to expert knowledge and thereby distinguishes between confirmatory and optional EK. While the confirmatory part appears safe in the final model, optional EK is either penalised in the same way as the rules from the data set, or is somewhat favoured by the parameter `optional_penalty`. This can be of judgement. Finally, unlike expert rules, the data rules can also learn noise to increase accuracy.
 
-With the dollar access, various additional information can be retrieved from the object `diabetes.erf` of the 'ExpertRuleFit' class.
+With the dollar access, various additional information can be retrieved from the object `diabetes.erf` of the `ExpertRuleFit` class.
 
-Finally, using the parameter selection 'expert_only = T' it is possible to learn an ERF ensemble solely on the basis of the specified expert knowledge in order to see how well and in which interaction the EC diagnoses diabetes best.
+Finally, using the parameter selection `expert_only = T` it is possible to learn an ERF ensemble solely on the basis of the specified expert knowledge in order to see how well and in which interaction expert knowledge classifies diabetes, even without respective training examples.
 
 ```{r, results = TRUE}
 
