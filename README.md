@@ -1,4 +1,3 @@
-
 # ExpertRuleFit -
 ## Complementing Rule Ensembles with Expert Knowledge
 
@@ -23,9 +22,8 @@ The exploitation of expert knowledge/reasoning and training examples as compleme
 
 The basic usage and default settings of the ExpertRuleFit function are as follows:
 
-```{r, results = FALSE}
+```{r, eval = FALSE, echo = FALSE}
 
-createERFsets(data, train_frac)
 set.seed(42)
 diabetes.erf <- ExpertRuleFit(X, y, Xtest = NULL, ytest = NULL, intercept=T,
                               optional_expert_rules = NULL, confirmatory_expert_rules = NULL,
@@ -59,26 +57,26 @@ head(data)
 **Expert Knowledge** Factual medical expert knowledge may be extracted from textbooks, 
 clinical practice guidelines and expert interviews/assessments. For this example we use EK from the medical guideline *Standards of Medical Care in Diabetes - 2019 (SMCD)* published by the American Diabetes Association as well as the German guideline *Nationale Versorgungs-Leitlinie - Diabetes mellitus Typ 2 (NVLDM)*
 
-```{r, eval = T, echo = F}
+```{r, eval = TRUE, echo = FALSE}
 
 # confirmatory expert rules (1)
 guideline_rules1 <- c("Age<=39 & BP<=80 & BMI<25",
-                                  "Age<=39 & BP<=80 & BMI>=25 & BMI<=30",
-                                  "Age<=39 & BP<=80 & BMI>=31 & BMI<=40",         
-                                  "Age>=40 & Age<=49 & BP<=80 & BMI>=31 & BMI<=40",
-                                  "Age<=39 & BP>=81 & BMI>=31 & BMI<=40",
-                                  "Age<=39 & BP<=80 & BMI>40",
-                                  "Glucose<=100", "Glucose>100 & Glucose<=110",
-                                  "Glucose>110", "BP<=85", "BP>85 & BP<=90", 
-                                  "BMI<=24", "BMI<24 & BMI<=26", "BMI>26",
-                                  "Glucose>110 & BMI>26")
+                      "Age<=39 & BP<=80 & BMI>=25 & BMI<=30",
+                      "Age<=39 & BP<=80 & BMI>=31 & BMI<=40",         
+                      "Age>=40 & Age<=49 & BP<=80 & BMI>=31 & BMI<=40",
+                      "Age<=39 & BP>=81 & BMI>=31 & BMI<=40",
+                      "Age<=39 & BP<=80 & BMI>40",
+                      "Glucose<=100", "Glucose>100 & Glucose<=110",
+                      "Glucose>110", "BP<=85", "BP>85 & BP<=90", 
+                      "BMI<=24", "BMI<24 & BMI<=26", "BMI>26",
+                      "Glucose>110 & BMI>26")
                                   
 # optional expert rules                              
 guideline_rules2 <- c("Age>=50 & Age<=59 & BP>=81 & BMI>=25 & BMI<=30",
-                              "Age>=50 & Age<=59 & BP<=80 & BMI>=31 & BMI<=40",
-                              "Age>=60 & BP<=80 & BMI>=31 & BMI<=40",
-                              "Age>=50 & Age<=59 &  BP>=81 & BMI>40", "BP>90"                                         
-                              "Glucose>110 & BP>90", "BP>90 & BMI>26")
+                      "Age>=50 & Age<=59 & BP<=80 & BMI>=31 & BMI<=40",
+                      "Age>=60 & BP<=80 & BMI>=31 & BMI<=40",
+                      "Age>=50 & Age<=59 &  BP>=81 & BMI>40", "BP>90",                                        
+                      "Glucose>110 & BP>90", "BP>90 & BMI>26")
 
 # optional expert linear terms                            
 guideline_terms <-  c("BP", Glucose")
@@ -91,14 +89,14 @@ Further expert knowledge stems from personal interviews with practicing doctors 
 
 # confirmatory expert rules (2)
 expert_interview_rules <- c("Age<=42 & BP<=80 & BMI<=29",
-                         "Age>=45 & BP>=90 & Glucose>=125",
-                         "Age<=31 & BP>=90 & BMI>=38",
-                         "Age>=55 & BP<=80 & BMI<=29",
-                         "Age>=60 & Glucose>=130 & BMI>=35", 
-                         "Age>=60 & BP>=90 & BMI>=37",
-                         "Age>=45 & BP>=90 & BMI>=35 & Glucose>=130",
-                         "Age>=55 & BP<=90 & BMI<=30 & Glucose>=130",
-                         "Age<=60 & BP<=90 & BMI<=30 & Glucose<=100")
+                           "Age>=45 & BP>=90 & Glucose>=125",
+                           "Age<=31 & BP>=90 & BMI>=38",
+                           "Age>=55 & BP<=80 & BMI<=29",
+                           "Age>=60 & Glucose>=130 & BMI>=35", 
+                           "Age>=60 & BP>=90 & BMI>=37",
+                           "Age>=45 & BP>=90 & BMI>=35 & Glucose>=130",
+                           "Age>=55 & BP<=90 & BMI<=30 & Glucose>=130",
+                           "Age<=60 & BP<=90 & BMI<=30 & Glucose<=100")
 
 # confirmatory linear terms
 expert_interview_terms <- c("BMI", "Age", "DPF")
@@ -112,7 +110,7 @@ Thus, we specify the ERF model as:
 erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                               optional_expert_rules = guideline_rules2, 
                               confirmatory_expert_rules = c(guideline_rules1, expert_interview_rules),  
-                              optional_linear_terms= guideline_terms
+                              optional_linear_terms= guideline_terms,
                               confirmatory_linear_terms = expert_interview_terms,
                               optional_penalty = 0.8, print_output = T)
 
@@ -138,4 +136,3 @@ erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                               expert_only = T, print_output = T)
 
 ```
-
