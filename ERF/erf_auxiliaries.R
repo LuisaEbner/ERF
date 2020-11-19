@@ -53,8 +53,7 @@ library(cvAUC)
 #' @return list object of length 4 including the valid set of intputs as X, Xtest, y, ytest
 
 
-create_X_y_Xtest_ytest <- function(data, train_frac, pos_class = 1,
-                                   target_name = NULL, type_missing = NULL){
+createERFsets <- function(data, train_frac, pos_class = 1, target_name = NULL, type_missing = NULL){
   
   # rename the target column
   if (is.null(target_name) == F){

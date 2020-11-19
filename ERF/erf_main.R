@@ -24,8 +24,8 @@ library(Metrics)
 
 
 # External functions 
-source("../data simulation/simulation_main.R")
-source("erf_auxiliaries.R")
+source("./data simulation/simulation_main.R")
+source("./ERF/erf_auxiliaries.R")
 
 
 # THE EXPERT RULEFIT IMPLEMENTATION
