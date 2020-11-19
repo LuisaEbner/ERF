@@ -43,7 +43,7 @@ To get a first impression of how the function `ExpertRuleFit()` works, a short i
 concentrations in different medical test settings. Eight numeric attributes were included as significant risk factors for an onset of
 diabetes. These are: *Pregnancies, Glucose, BP, SkinThickness, Insulin, BMI, DPF* and *Age*.
 
-```{r}
+```{r, eval = T, echo = F}
 
 source("./experiments/diabetes/erf_diabetes_dataprep.R")
 source("./ERF/erf_main.R")
@@ -58,7 +58,7 @@ head(data)
 **Expert Knowledge** Factual medical expert knowledge may be extracted from textbooks, 
 clinical practice guidelines and expert interviews/assessments. For this example we use EK from the medical guideline *Standards of Medical Care in Diabetes - 2019 (SMCD)* published by the American Diabetes Association as well as the German guideline *Nationale Versorgungs-Leitlinie - Diabetes mellitus Typ 2 (NVLDM)*
 
-```{r, results = FALSE}
+```{r, eval = T, echo = F}
 
 # confirmatory expert rules (1)
 guideline_rules1 <- c("Age<=39 & BP<=80 & BMI<25",
@@ -86,7 +86,7 @@ guideline_terms <-  c("BP", Glucose")
 
 Further expert knowledge stems from personal interviews with practicing doctors as:
 
-```{r, results = FALSE}
+```{r, eval = T, echo =F}
 
 # confirmatory expert rules (2)
 expert_interview_rules <- c("Age<=42 & BP<=80 & BMI<=29",
@@ -106,7 +106,7 @@ expert_interview_terms <- c("BMI", "Age", "DPF")
 
 Thus, we specify the ERF model as:
 
-```{r, results = TRUE}
+```{r, eval = T, echo = T}
 
 erf_diabetes <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                               optional_expert_rules = guideline_rules2, 
