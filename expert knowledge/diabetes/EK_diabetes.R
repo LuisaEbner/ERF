@@ -85,4 +85,4 @@ hek_rules <- c("Age<=42 & BP<=80 & BMI<=29",
                          "Age>=55 & BP<=90 & BMI<=30 & Glucose>=130",
                          "Age<=60 & BP<=90 & BMI<=30 & Glucose<=100")
 
-hek_linear <- c("BMI", "Age", "BP", "Glucose")
+hek_linear <- c("BMI", "Age", "DPF")

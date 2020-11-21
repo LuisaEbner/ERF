@@ -50,14 +50,11 @@ source("./expert knowledge/diabetes/EK_diabetes.R")
 
 # a) Training data
 
-train.index <- createDataPartition(data$y, p = 0.7, list = FALSE)
-train <- data[ train.index,]
-test  <- data[-train.index,]
-X <- train[, -ncol(train)]
-y <- train$y
-Xtest <- test[, -ncol(test)]
-ytest <- test$y
-
+sets <- createERFsets(data, 0.7)
+X <- sets[[1]]
+y <- sets[[2]]
+Xtest <- sets[[3]]
+ytest <- sets[[4]]
 
 # b) Expert Rules
 rules <- c(fdk_rules1, fdk_rules2, hek_rules)
@@ -108,7 +105,7 @@ pre1 <- pre_for_comparison(train, test)
 
 # performance comparison
 performance_comparison <- modelcomp(erf1 = erf1, erf2 = erf2 , erf3 = erf3, 
-                                    pre1 = pre1, pre2 = NULL, pre3 = NULL)
+                                    pre1 = pre1)
 
 
 # cross validated performance
