@@ -34,6 +34,7 @@ library(cvAUC)
 # 11. support_remove
 # 12. support_take
 # 13. modelcomp
+# 14. CV_erf
 
 # + Functions adopted from the MSc. Thesis of Malte Nalenz
 
@@ -795,5 +796,58 @@ createXtest = function(X, rules) {
   data.matrix(Xr)
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Cross Validation:
+
+CV_erf <- function(data, cv_folds = 10, seed = 1432, intercept=T,
+                   optional_expert_rules = NULL, confirmatory_expert_rules = NULL,  
+                   optional_linear_terms=NULL, confirmatory_linear_terms = NULL,
+                   expert_only = F, optional_penalty = 1,
+                   ntree=250, ensemble = "GBM", mix=0.5, L=3, S=6, minsup=.025,
+                   corelim = 1, alpha = 1, s = "lambda.1se", 
+                   n_imp = 10){
+  cv_measures <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
+  n_measures <- length(cv_measures)
+  res <- matrix(0, cv_folds, n_measures)
+  
+  set.seed(seed)
+  
+  ids = sample(1:nrow(data))
+  fold = rep(1:10, length.out = nrow(data))
+  target_col = ncol(data)
+  y = as.factor(data[, target_col])
+  x = data[,-target_col]
+  for(i in 1:cv_folds){
+    xtrain = x[ids[fold != i], ]
+    ytrain = as.factor(y[ids[fold != i]])
+    xtest = x[ids[fold == i], ]
+    ytest = as.factor(y[ids[fold == i]])
+    model <- ExpertRuleFit(X=xtrain, y = ytrain, Xtest = xtest, ytest = ytest, intercept = intercept,
+                           optional_expert_rules = optional_expert_rules, 
+                           confirmatory_expert_rules = confirmatory_expert_rules,
+                           optional_linear_terms = optional_linear_terms, 
+                           confirmatory_linear_terms = confirmatory_linear_terms,
+                           expert_only = expert_only, optional_penalty = optional_penalty,
+                           ntree = ntree, ensemble = ensemble, mix = mix, L = L, S = S, minsup = minsup, 
+                           corelim = corelim, alpha = alpha, s = s, n_imp = n_imp,
+                           print_output = F)
+    
+    for(k in 1:length(cv_measures)){
+      res[i, k] <- model[[cv_measures[k]]]
+    }
+  }
+  
+  #print(res)
+  cv_res <- colMeans(res)
+  
+  #print(cv_res)
+  
+  out = list(NTerms = cv_res[1], AvgRuleLength = cv_res[2], AUC = cv_res[3], 
+             ClassErr = cv_res[4], PropEKImp = cv_res[5], PropEK = cv_res[6],
+             PropOptionalEK = cv_res[7])
+  
+  out
+  
+}
 
