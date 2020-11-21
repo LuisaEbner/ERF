@@ -154,7 +154,7 @@ sample_signs_per_rule <- function(n_rel_rules, rule_lengths){
 sample_values_per_rule <- function(n_rel_rules, rule_lengths, mu, sigma){
   value_list <- vector(mode = "list", length = n_rel_rules)
   for (i in 1:n_rel_rules){
-    value_list[[i]] <- as.character(round(rnorm(rule_lengths[i], mu, sigma),10))
+    value_list[[i]] <- as.character(round(rnorm(rule_lengths[i], mu, sigma),4))
   }
   value_list
 }
@@ -338,7 +338,7 @@ adapt_names <- function(data){
   pos_names <- colnames(X)
   classic_names <- c()
   for (i in 1:ncol(X)){
-    classic_names[i] <- paste("Col",i,"_", sep = "")
+    classic_names[i] <- paste("Col",i,".", sep = "")
   }
   colnames(data) <- c(classic_names, "y")
   return(data)

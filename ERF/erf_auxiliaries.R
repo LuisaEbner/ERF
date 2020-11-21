@@ -78,12 +78,22 @@ createERFsets <- function(data, train_frac, pos_class = 1, target_name = NULL, t
   test  <- data[-train.index,]
   
   # create dataframe of input attributes
-  X <- train[, -ncol(train)]
-  Xtest <- test[, -ncol(test)]
+  if(train_frac > 0 & train_frac < 1){
+    X <- train[, -ncol(train)]
+    Xtest <- test[, -ncol(test)]
+    
+    y <- factor(ifelse(train$y == pos_class, 1, 0))
+    ytest <- factor(ifelse(test$y == pos_class, 1, 0))
+  } else if (train_frac == 1){
+    X <- train[, -ncol(train)]
+    Xtest <- NULL
+    y <- factor(ifelse(train$y == pos_class, 1, 0))
+    ytest <- NULL
+  } else{
+    stop("The fraction of training examples must be greater than 0 and at least 1.")
+  }
   
-  # Convert target attribute into 0-1-coded factor
-  y <- factor(ifelse(train$y == pos_class, 1, 0))
-  ytest <- factor(ifelse(test$y == pos_class, 1, 0))
+
   
   out = list(X, y, Xtest, ytest)
   
@@ -238,7 +248,13 @@ average_rule_length <- function(rules){
 #' @description selects the n model terms with the greatest model coefficients indicating most important rules and linear terms.
 
 imp_terms <- function(model, n){
-  largest_coefs <- sort(model[,2], decreasing = T)[1:n]
+  nt <- length(model$features)
+  if(n < nt){
+    largest_coefs <- sort(model[,2], decreasing = T)[1:n]
+  } else{
+    largest_coefs <- sort(model[,2], decreasing = T)[1:nt]
+  }
+  
   largest_pos <- c()
   if(length(largest_coefs) > 0){
     for(i in 1: length(largest_coefs)){

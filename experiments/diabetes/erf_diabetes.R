@@ -50,7 +50,7 @@ source("./expert knowledge/diabetes/EK_diabetes.R")
 
 # a) Training data
 
-sets <- createERFsets(data, 0.7)
+sets <- createERFsets(data, train_frac = 0.8)
 X <- sets[[1]]
 y <- sets[[2]]
 Xtest <- sets[[3]]
