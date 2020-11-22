@@ -35,6 +35,7 @@ library(cvAUC)
 # 12. support_take
 # 13. modelcomp
 # 14. CV_erf
+# 15. concept_drift_split
 
 # + Functions adopted from the MSc. Thesis of Malte Nalenz
 
@@ -879,4 +880,45 @@ CV_erf <- function(data, cv_folds = 10, seed = 1432, intercept=T,
   out
   
 }
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# creates artificial concept drift
+
+concept_drift_split <- function(data, condition, train_frac = 0.7, cond = 0.8){
+  n_train = floor(train_frac*nrow(data))
+  data_cond = data %>% filter(eval(str2expression(condition)))
+  n_cond = nrow(data_cond)
+  data_rest = setdiff(data, data_cond)
+  frac_cond = n_cond/n_train
+  cat(sprintf(" %#.4f of the examples apply to the specified condition. \n", n_cond/nrow(data)))
+  cat(sprintf("\n"))
+  
+  if (frac_cond < cond){
+    train <- data_cond
+    n_extra <- n_train - nrow(train)
+    extra <- data_rest %>% sample_n(n_extra)
+    train <- rbind(train, extra)
+  } else{
+    train <- data_cond %>% sample_n(frac_cond*n_cond)
+    cat(sprintf(" %d examples from the %d examples defined as training set apply to the specified condition. \n", nrow(train), n_train))
+    n_extra <- n_train - nrow(train)
+    extra <- data_rest %>% sample_n(n_extra)
+    train <- rbind(train, extra)
+  }
+  
+  test <- setdiff(data, train)
+  
+  X <- train[, -ncol(train)]
+  Xtest <- test[, -ncol(test)]
+  
+  y <- train[, ncol(train)]
+  ytest <- test[, ncol(test)]
+  
+  
+  out <- list(X, y, Xtest, ytest)
+  out
+  
+}
+
 
