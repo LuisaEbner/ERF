@@ -1,0 +1,217 @@
+################################################################################
+#                                                                              #
+#             Can Expert Knowledge increase Data Efficiency?                   #
+#                                                                              #
+#                   Experiments on Predicting Diabetes                         #
+#                                                                              #
+################################################################################ 
+
+# External functions
+source("./data simulation/simulation_main.R")
+source("./ERF/erf_main.R")
+
+# Simulation
+simulation <- create_simulation(n_vars = 30, n_obs = 1000,
+                                mu = 0, sigma = 1, 
+                                n_rule_vars = 10, 
+                                n_rel_rules = 20, 
+                                optional_lengths = c(1, 2, 3),
+                                weights = c(1/3, 1/3, 1/3),
+                                mu_beta = 0, sigma_beta = 5, 
+                                mu_epsilon = 0, sigma_epsilon = 0.01)
+
+# Data
+data <- simulation[[2]]
+
+# EK
+expert_rules <- simulation[[3]]
+conf_rules <- support_take(expert_rules, data, 0.05)
+opt_rules <- setdiff(expert_rules, conf_rules)
+
+# expert_rules
+# conf_rules
+# opt_rules
+
+
+#===============================================================================
+#                 EXPERIMENT: VARYING DATASET SIZES
+#===============================================================================
+
+# apply the same ERF, RF, PRE Model with 786 (all), 600, 400, 200 observations
+
+data_600 <- sample_n(data, 600)
+data_400 <- sample_n(data, 400)
+data_200 <- sample_n(data, 200)
+
+# ERF Model 1 (use full data set)
+erf_full <- CV_erf(data = data, confirmatory_expert_rules = conf_rules, 
+                   optional_expert_rules = opt_rules)
+
+# erf_full
+
+
+# ERF Model 2 (600 obs)
+erf_600 <- CV_erf(data = data_600, confirmatory_expert_rules = conf_rules, 
+                  optional_expert_rules = opt_rules)
+
+
+# ERF Model 3 (400 obs)
+erf_400 <- CV_erf(data = data_400, confirmatory_expert_rules = conf_rules, 
+                  optional_expert_rules = opt_rules)
+
+
+# ERF Model 4 (200 obs)
+erf_200 <- CV_erf(data = data_200, confirmatory_expert_rules = conf_rules, 
+                  optional_expert_rules = opt_rules)
+
+
+# create dataframe to plot 
+erf_vec_200 <- unlist(erf_200, use.names=FALSE)
+erf_vec_400 <- unlist(erf_400, use.names=FALSE)
+erf_vec_600 <- unlist(erf_600, use.names=FALSE)
+erf_vec_full <- unlist(erf_full, use.names=FALSE)
+
+erf_performance <- data.frame(erf_full = erf_vec_full, erf_600 = erf_vec_600, erf_400 = erf_vec_400, erf_200 = erf_vec_200)
+row.names(erf_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
+erf_performance
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# RuleFit
+
+# RF Model 1 (use full data set)
+rf_full <- CV_erf(data = data)
+
+# ERF Model 2 (600 obs)
+rf_600 <- CV_erf(data = data_600)
+
+# ERF Model 3 (400 obs)
+rf_400 <- CV_erf(data = data_400)
+
+
+# ERF Model 4 (200 obs)
+rf_200 <- CV_erf(data = data_200)
+
+# create dataframe to plot 
+rf_vec_200 <- unlist(rf_200, use.names=FALSE)
+rf_vec_400 <- unlist(rf_400, use.names=FALSE)
+rf_vec_600 <- unlist(rf_600, use.names=FALSE)
+rf_vec_full <- unlist(rf_full, use.names=FALSE)
+
+rf_performance <- data.frame(rf_full = rf_vec_full, rf_600 = rf_vec_600, rf_400 = rf_vec_400, rf_200 = rf_vec_200)
+row.names(rf_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
+rf_performance
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Prediction Rule Ensembles
+
+
+# PRE Model 1 (use full data set)
+pre_full <- pre_for_comparison(data)
+
+
+# PRE Model 2 (600 obs)
+pre_600 <- pre_for_comparison(data_600)
+
+# PRE Model 3 (400 obs)
+pre_400 <- pre_for_comparison(data_400)
+
+
+# PRE Model 4 (200 obs)
+pre_200 <- pre_for_comparison(data_200)
+
+
+# create dataframe to plot 
+pre_vec_200 <- unlist(pre_200[c(1:6)], use.names=FALSE)
+pre_vec_400 <- unlist(pre_400[c(1:6)], use.names=FALSE)
+pre_vec_600 <- unlist(pre_600[c(1:6)], use.names=FALSE)
+pre_vec_full <- unlist(pre_full[c(1:6)], use.names=FALSE)
+
+pre_performance <- data.frame(pre_full = c(pre_vec_full, 0), pre_600 = c(pre_vec_600,0), pre_400 = c(pre_vec_400,0), pre_200 = c(pre_vec_200,0))
+row.names(pre_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
+
+#===============================================================================
+
+# Comparison Plots
+
+erf_performance
+rf_performance
+pre_performance
+
+# NTerms Plot
+
+NTerms <- unlist(c(erf_performance[1, ], rf_performance[1, ], pre_performance[1, ]), use.names = F)
+AvgRuleLength <- unlist(c(erf_performance[2, ], rf_performance[2, ], pre_performance[2, ]), use.names = F)
+AUC <- unlist(c(erf_performance[3, ], rf_performance[3, ], pre_performance[3, ]), use.names = F)
+ClassErr <- unlist(c(erf_performance[4, ], rf_performance[4, ], pre_performance[4, ]), use.names = F)
+PropEKImp <- unlist(c(erf_performance[5, ], rf_performance[5, ], pre_performance[5, ]), use.names = F)
+PropEK <- unlist(c(erf_performance[6, ], rf_performance[6, ], pre_performance[6, ]), use.names = F)
+PropOptionalEK <- unlist(c(erf_performance[7, ], rf_performance[7, ], pre_performance[7, ]), use.names = F)
+
+comparison_df <- data.frame(NTerms = NTerms, AvgRuleLength = AvgRuleLength, AUC = AUC, ClassErr = ClassErr,
+                            PropEKImp = PropEKImp, PropEK = PropEK, PropOptionalEK = PropOptionalEK,
+                            Model = c(rep("ERF", 4), rep("RuleFit", 4),rep("PRE", 4)), 
+                            Sample = rep(c("full (1000)", "600", "400", "200"),3))
+
+comparison_df
+
+# 1. NTerms Plot
+ggplot(comparison_df, 
+        aes(x = Sample, y=NTerms, color = Model, group = Model)) +
+        geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
+        labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "Number of terms") + 
+        theme_minimal() +
+        theme(legend.position = "right") 
+
+# 2. Average Rule Length Plot
+
+ggplot(comparison_df, 
+        aes(x = Sample, y=AvgRuleLength, color = Model, group = Model)) +
+        geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
+        labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "Average rule length") + 
+        theme_minimal() +
+        theme(legend.position = "right") 
+
+# 3. AUC Plot
+
+ggplot(comparison_df, 
+        aes(x = Sample, y=AUC, color = Model, group = Model)) +
+        geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
+        labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "AUC") + 
+        theme_minimal() +
+        theme(legend.position = "right") 
+
+# 4. Classification Error Plot
+
+ggplot(comparison_df, 
+        aes(x = Sample, y=ClassErr, color = Model, group = Model)) +
+        geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
+        labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "Classification Error") + 
+        theme_minimal() +
+        theme(legend.position = "right") 
+
+# 5. Proportion of Expert Knowledge among the most important terms
+
+ggplot(comparison_df, 
+        aes(x = Sample, y=PropEKImp, color = Model, group = Model)) +
+        geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
+        labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "Proportion of EK among the 10 most important terms") + 
+        theme_minimal() +
+        theme(legend.position = "right") 
+
+# 6. Proportion of Expert Knowlegde in the final model
+
+ggplot(comparison_df, 
+        aes(x = Sample, y=PropEK, color = Model, group = Model)) +
+        geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
+        labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "Proportion of EK") + 
+        theme_minimal() +
+        theme(legend.position = "right") 
+
