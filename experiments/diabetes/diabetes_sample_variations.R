@@ -31,8 +31,9 @@ opt_linear <- c("BP", "Glucose")
 #                 EXPERIMENT: VARYING DATASET SIZES
 #===============================================================================
 
-# apply the same ERF, RF, PRE Model with 786 (all), 600, 400, 200 observations
+# apply the same ERF, ERF_EKprio, ERF_EKonly, RF, PRE Model with 786 (all), 600, 400, 200 observations
 
+set.seed(2394)
 data_600 <- sample_n(data, 600)
 data_400 <- sample_n(data, 400)
 data_200 <- sample_n(data, 200)
@@ -74,6 +75,97 @@ erf_vec_full <- unlist(erf_full, use.names=FALSE)
 erf_performance <- data.frame(erf_full = erf_vec_full, erf_600 = erf_vec_600, erf_400 = erf_vec_400, erf_200 = erf_vec_200)
 row.names(erf_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ERF with EK Priority 1 (use full data set)
+erf_prio_full <- CV_erf(data = data, confirmatory_expert_rules = conf_rules, 
+                   optional_expert_rules = opt_rules, 
+                   optional_linear_terms= opt_linear,
+                   confirmatory_linear_terms = conf_linear, 
+                   optional_penalty = 0.5)
+
+
+# ERF with EK Priority 2 (600 obs)
+erf_prio_600 <- CV_erf(data = data_600, confirmatory_expert_rules = conf_rules, 
+                  optional_expert_rules = opt_rules, 
+                  optional_linear_terms= opt_linear,
+                  confirmatory_linear_terms = conf_linear,
+                  optional_penalty = 0.5)
+
+
+# ERF with EK Priority 3 (400 obs)
+erf_prio_400 <- CV_erf(data = data_400, confirmatory_expert_rules = conf_rules, 
+                  optional_expert_rules = opt_rules, 
+                  optional_linear_terms= opt_linear,
+                  confirmatory_linear_terms = conf_linear,
+                  optional_penalty = 0.5)
+
+
+# ERF with EK Priority (200 obs)
+erf_prio_200 <- CV_erf(data = data_200, confirmatory_expert_rules = conf_rules, 
+                  optional_expert_rules = opt_rules, 
+                  optional_linear_terms= opt_linear,
+                  confirmatory_linear_terms = conf_linear,
+                  optional_penalty = 0.5)
+
+
+# create dataframe to plot 
+erf_prio_vec_200 <- unlist(erf_prio_200, use.names=FALSE)
+erf_prio_vec_400 <- unlist(erf_prio_400, use.names=FALSE)
+erf_prio_vec_600 <- unlist(erf_prio_600, use.names=FALSE)
+erf_prio_vec_full <- unlist(erf_prio_full, use.names=FALSE)
+
+erf_prio_performance <- data.frame(erf_prio_full = erf_prio_vec_full, 
+                                   erf_prio_600 = erf_prio_vec_600, 
+                                   erf_prio_400 = erf_prio_vec_400, 
+                                   erf_prio_200 = erf_prio_vec_200)
+row.names(erf_prio_performance) <- c("NTerms", "AvgRuleLength", "AUC",
+                                     "ClassErr", "PropEKImp", "PropEK",
+                                     "PropOptionalEK")
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ERF EK only 1 (use full data set)
+erf_only_full <- CV_erf(data = data, confirmatory_expert_rules = conf_rules, 
+                   optional_expert_rules = opt_rules, 
+                   optional_linear_terms= opt_linear,
+                   confirmatory_linear_terms = conf_linear, expert_only = T)
+
+
+# ERF EK only 2 (600 obs)
+erf_only_600 <- CV_erf(data = data_600, confirmatory_expert_rules = conf_rules, 
+                  optional_expert_rules = opt_rules, 
+                  optional_linear_terms= opt_linear,
+                  confirmatory_linear_terms = conf_linear, expert_only = T)
+
+
+# ERF EK only 3 (400 obs)
+erf_only_400 <- CV_erf(data = data_400, confirmatory_expert_rules = conf_rules, 
+                  optional_expert_rules = opt_rules, 
+                  optional_linear_terms= opt_linear,
+                  confirmatory_linear_terms = conf_linear, expert_only = T)
+
+
+# ERF EK only 4 (200 obs)
+erf_only_200 <- CV_erf(data = data_200, confirmatory_expert_rules = conf_rules, 
+                  optional_expert_rules = opt_rules, 
+                  optional_linear_terms= opt_linear,
+                  confirmatory_linear_terms = conf_linear, expert_only = T)
+
+
+# create dataframe to plot 
+erf_only_vec_200 <- unlist(erf_only_200, use.names=FALSE)
+erf_only_vec_400 <- unlist(erf_only_400, use.names=FALSE)
+erf_only_vec_600 <- unlist(erf_only_600, use.names=FALSE)
+erf_only_vec_full <- unlist(erf_only_full, use.names=FALSE)
+
+erf_only_performance <- data.frame(erf_only_full = erf_only_vec_full,
+                              erf_only_600 = erf_only_vec_600, 
+                              erf_only_400 = erf_only_vec_400, 
+                              erf_only_200 = erf_only_vec_200)
+row.names(erf_only_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr",
+                                     "PropEKImp", "PropEK", "PropOptionalEK")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -180,7 +272,7 @@ ggplot(comparison_df,
        aes(x = Sample, y=AUC, color = Model, group = Model)) +
   geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
   scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
-  labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "AUC") + 
+  labs(title = "Predictive performance for varying dataset sizes", x ="Number of data points", y = "AUC") + 
   theme_minimal() +
   theme(legend.position = "right") 
 
@@ -190,7 +282,7 @@ ggplot(comparison_df,
        aes(x = Sample, y=ClassErr, color = Model, group = Model)) +
   geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
   scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
-  labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "Classification Error") + 
+  labs(title = "Predictive performance for varying dataset sizes", x ="Number of data points", y = "Classification Error") + 
   theme_minimal() +
   theme(legend.position = "right") 
 
@@ -200,16 +292,16 @@ ggplot(comparison_df,
        aes(x = Sample, y=PropEKImp, color = Model, group = Model)) +
         geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
         scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
-        labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "Proportion of EK among the 10 most important terms") + 
+        labs(title = "Proportion of EK for varying dataset sizes", x ="Number of data points", y = "Proportion of EK among the 10 most important terms") + 
         theme_minimal() +
         theme(legend.position = "right") 
 
-# 6. Proportion of Expert Knowlegde in the final model
+# 6. Proportion of Expert Knowledge in the final model
 
 ggplot(comparison_df, 
        aes(x = Sample, y=PropEK, color = Model, group = Model)) +
   geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
   scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
-  labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "Proportion of EK") + 
+  labs(title = "Proportion of EK for varying dataset sizes", x ="Number of data points", y = "Proportion of EK") + 
   theme_minimal() +
   theme(legend.position = "right") 
