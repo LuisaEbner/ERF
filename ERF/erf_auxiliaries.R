@@ -54,7 +54,7 @@ library(cvAUC)
 #' @return list object of length 4 including the valid set of intputs as X, Xtest, y, ytest
 
 
-createERFsets <- function(data, train_frac, pos_class = 1, target_name = NULL, type_missing = NULL){
+createERFsets <- function(data, train_frac, n_obs = NULL, pos_class = 1, target_name = NULL, type_missing = NULL){
   
   # rename the target column
   if (is.null(target_name) == F){
@@ -70,6 +70,17 @@ createERFsets <- function(data, train_frac, pos_class = 1, target_name = NULL, t
   }
   
   data <- data[complete.cases(data), ]
+  
+  # down-size the data set 
+  if(!(is.null(n_obs))){
+    if(n_obs > nrow(data)){
+      stop("n_obs needs to be smaller or equal to the number of observations in the original dataset.")
+    } else {
+      data <- sample_n(data, n_obs)
+    }
+  }
+  
+  #print(data)
   
   # split training- and test data
   set.seed(45)
@@ -92,8 +103,6 @@ createERFsets <- function(data, train_frac, pos_class = 1, target_name = NULL, t
   } else{
     stop("The fraction of training examples must be greater than 0 and at least 1.")
   }
-  
-
   
   out = list(X, y, Xtest, ytest)
   
@@ -552,8 +561,12 @@ support_take <- function(rules, data, minsup){
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-pre_for_comparison <- function(train, test, ntrees = 250, n_imp = 10, 
+pre_for_comparison <- function(data, train_frac = 0.7, ntrees = 250, n_imp = 10, 
                                conf = NULL){
+  
+  train.index <- createDataPartition(data$y, p = train_frac, list = FALSE)
+  train <- data[ train.index,]
+  test  <- data[-train.index,]
   
   if(is.null(conf)){
     pre <- pre(y ~ ., data = train, family = "binomial", ntrees = ntrees)
@@ -590,22 +603,22 @@ pre_for_comparison <- function(train, test, ntrees = 250, n_imp = 10,
   prop_ek <- length(confek)/nterms
 
   
-  out = list(Train = train, 
+  out = list(NTerms = nterms,
+             AvgRuleLength = arl,
+             AUC = auc, 
+             ClassErr = ce,
+             PropEKImp = prop_impek,
+             PropEK = prop_ek,
+             Train = train, 
              Test = test,
              Model = model, 
              Features = rules, 
              Coefficients = coefficients, 
-             NTerms = nterms,
              Predictions = predictions,
-             AvgRuleLength = arl,
              ConfusionMatrix = conf_mat, 
-             AUC = auc, 
-             ClassErr = ce,
              ImportantFeatures = impfeatures,
              ConfirmatoryEK = confek,
-             ImportantEK = impek,
-             PropEKImp = prop_impek,
-             PropEK = prop_ek)
+             ImportantEK = impek)
   
   out
 }
