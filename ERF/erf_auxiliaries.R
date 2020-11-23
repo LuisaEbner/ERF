@@ -562,20 +562,17 @@ support_take <- function(rules, data, minsup){
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-pre_for_comparison <- function(data, train_frac = 0.7, ntrees = 250, n_imp = 10, 
-                               conf = NULL){
+pre_for_comparison <- function(data = NULL, train = NULL, test = NULL, 
+                               train_frac = 0.7, ntrees = 250, n_imp = 10){
   
-  train.index <- createDataPartition(data$y, p = train_frac, list = FALSE)
-  train <- data[ train.index,]
-  test  <- data[-train.index,]
+  if(is.null(train) & is.null(test) & !(is.null(data))){
+    train.index <- createDataPartition(data$y, p = train_frac, list = FALSE)
+    train <- data[ train.index,]
+    test  <- data[-train.index,]
+  } 
   
-  if(is.null(conf)){
-    pre <- pre(y ~ ., data = train, family = "binomial", ntrees = ntrees)
-  } else {
-    pre <- pre(y ~ ., data = train, family = "binomial", ntrees = ntrees, 
-               confirmatory = conf)
-  }
-
+  pre <- pre(y ~ ., data = train, family = "binomial", ntrees = ntrees)
+ 
   coefficients <- coef(pre)$coefficient[coef(pre)$coefficient != 0] 
   nterms <- length(coefficients) -1
   rules <- coef(pre)$description[1:length(coefficients)]
@@ -587,39 +584,26 @@ pre_for_comparison <- function(data, train_frac = 0.7, ntrees = 250, n_imp = 10,
   lambda.1se <- pre$glmnet.fit$lambda.1se
   lambda.min <- pre$glmnet.fit$lambda.min
   arl <- average_rule_length(rules) 
-  predictions <- as.numeric(as.vector(predict(pre, newdata = test, type = "class")))
-  auc <-  auc(test$y, predictions) 
-  ce <-   ce(test$y, predictions) 
-  conf_mat <- table(pred = predictions, true = test$y)
+  pred_prob <- as.numeric(as.vector(predict(pre, newdata = test, type = "response")))
+  pred_class <- as.numeric(as.vector(predict(pre, newdata = test, type = "class")))
+  auc <-  auc(test$y, pred_prob) 
+  ce <-   ce(test$y, pred_class) 
+  conf_mat <- table(pred = pred_class, true = test$y)
   impfeatures <- rules[1:n_imp]
   
-  if(!(is.null(conf))){
-    confek <- conf
-  } else{
-    confek <- NULL
-  }
-  
-  impek <- contains(confek, impfeatures)
-  prop_impek <- length(impek)/length(impfeatures)
-  prop_ek <- length(confek)/nterms
-
   
   out = list(NTerms = nterms,
              AvgRuleLength = arl,
              AUC = auc, 
              ClassErr = ce,
-             PropEKImp = prop_impek,
-             PropEK = prop_ek,
              Train = train, 
              Test = test,
              Model = model, 
              Features = rules, 
              Coefficients = coefficients, 
-             Predictions = predictions,
+             Predictions = pred_class,
              ConfusionMatrix = conf_mat, 
-             ImportantFeatures = impfeatures,
-             ConfirmatoryEK = confek,
-             ImportantEK = impek)
+             ImportantFeatures = impfeatures)
   
   out
 }
@@ -635,6 +619,105 @@ pre_for_comparison <- function(data, train_frac = 0.7, ntrees = 250, n_imp = 10,
 
 # pre_for_comparison(train, test)
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Cross Validation for PRE models
+
+CV_pre <- function(data = NULL, cv_folds = 10, seed = 1432, 
+                   train_frac = 0.7, ntrees = 250, n_imp = 10){
+  
+  cv_measures <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr")
+  n_measures <- length(cv_measures)
+  res <- matrix(0, cv_folds, n_measures)
+  
+  set.seed(seed)
+  
+  ids = sample(1:nrow(data))
+  fold = rep(1:10, length.out = nrow(data))
+  target_col = ncol(data)
+  y = as.factor(data[, target_col])
+  x = data[,-target_col]
+  for(i in 1:cv_folds){
+    xtrain = x[ids[fold != i], ]
+    ytrain = as.factor(y[ids[fold != i]])
+    xtest = x[ids[fold == i], ]
+    ytest = as.factor(y[ids[fold == i]])
+    model <- pre_for_comparison(data = data, train_frac = train_frac, 
+                                ntrees = ntrees, n_imp = n_imp)
+    
+    for(k in 1:length(cv_measures)){
+      res[i, k] <- model[[cv_measures[k]]]
+    }
+  }
+  
+  #print(res)
+  cv_res <- colMeans(res)
+  
+  #print(cv_res)
+  
+  out = list(NTerms = cv_res[1], AvgRuleLength = cv_res[2], AUC = cv_res[3], 
+             ClassErr = cv_res[4])
+  
+  out
+  
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+# Cross Validation:
+
+CV_erf <- function(data, cv_folds = 10, seed = 1432, intercept=T,
+                   optional_expert_rules = NULL, confirmatory_expert_rules = NULL,  
+                   optional_linear_terms=NULL, confirmatory_linear_terms = NULL,
+                   expert_only = F, optional_penalty = 1,
+                   ntree=250, ensemble = "GBM", mix=0.5, L=3, S=6, minsup=.025,
+                   corelim = 1, alpha = 1, s = "lambda.1se", 
+                   n_imp = 10){
+  cv_measures <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
+  n_measures <- length(cv_measures)
+  res <- matrix(0, cv_folds, n_measures)
+  
+  set.seed(seed)
+  
+  ids = sample(1:nrow(data))
+  fold = rep(1:10, length.out = nrow(data))
+  target_col = ncol(data)
+  y = as.factor(data[, target_col])
+  x = data[,-target_col]
+  for(i in 1:cv_folds){
+    xtrain = x[ids[fold != i], ]
+    ytrain = as.factor(y[ids[fold != i]])
+    xtest = x[ids[fold == i], ]
+    ytest = as.factor(y[ids[fold == i]])
+    model <- ExpertRuleFit(X=xtrain, y = ytrain, Xtest = xtest, ytest = ytest, intercept = intercept,
+                           optional_expert_rules = optional_expert_rules, 
+                           confirmatory_expert_rules = confirmatory_expert_rules,
+                           optional_linear_terms = optional_linear_terms, 
+                           confirmatory_linear_terms = confirmatory_linear_terms,
+                           expert_only = expert_only, optional_penalty = optional_penalty,
+                           ntree = ntree, ensemble = ensemble, mix = mix, L = L, S = S, minsup = minsup, 
+                           corelim = corelim, alpha = alpha, s = s, n_imp = n_imp,
+                           print_output = F)
+    
+    for(k in 1:length(cv_measures)){
+      res[i, k] <- model[[cv_measures[k]]]
+    }
+  }
+  
+  #print(res)
+  cv_res <- colMeans(res)
+  
+  #print(cv_res)
+  
+  out = list(NTerms = cv_res[1], AvgRuleLength = cv_res[2], AUC = cv_res[3], 
+             ClassErr = cv_res[4], PropEKImp = cv_res[5], PropEK = cv_res[6],
+             PropOptionalEK = cv_res[7])
+  
+  out
+  
+}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -708,6 +791,46 @@ modelcomp <- function(erf1, erf2 = NULL , erf3 = NULL,
   }
 
   out <- comp_table
+  out
+  
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# creates artificial concept drift
+
+concept_drift_split <- function(data, condition, train_frac = 0.7, cond = 0.95){
+  n_train = floor(train_frac*nrow(data))
+  data_cond = data %>% filter(eval(str2expression(condition)))
+  n_cond = nrow(data_cond)
+  data_rest = setdiff(data, data_cond)
+  frac_cond = n_cond/n_train
+  cat(sprintf(" %#.4f of the examples apply to the specified condition. \n", n_cond/nrow(data)))
+  cat(sprintf("\n"))
+  
+  if (frac_cond < cond){
+    train <- data_cond
+    n_extra <- n_train - nrow(train)
+    extra <- data_rest %>% sample_n(n_extra)
+    train <- rbind(train, extra)
+  } else{
+    train <- data_cond %>% sample_n(frac_cond*n_cond)
+    cat(sprintf(" %d examples from the %d examples defined as training set apply to the specified condition. \n", nrow(train), n_train))
+    n_extra <- n_train - nrow(train)
+    extra <- data_rest %>% sample_n(n_extra)
+    train <- rbind(train, extra)
+  }
+  
+  test <- setdiff(data, train)
+  
+  X <- train[, -ncol(train)]
+  Xtest <- test[, -ncol(test)]
+  
+  y <- train[, ncol(train)]
+  ytest <- test[, ncol(test)]
+  
+  
+  out <- list(X, y, Xtest, ytest)
   out
   
 }
@@ -827,98 +950,4 @@ createXtest = function(X, rules) {
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Cross Validation:
-
-CV_erf <- function(data, cv_folds = 10, seed = 1432, intercept=T,
-                   optional_expert_rules = NULL, confirmatory_expert_rules = NULL,  
-                   optional_linear_terms=NULL, confirmatory_linear_terms = NULL,
-                   expert_only = F, optional_penalty = 1,
-                   ntree=250, ensemble = "GBM", mix=0.5, L=3, S=6, minsup=.025,
-                   corelim = 1, alpha = 1, s = "lambda.1se", 
-                   n_imp = 10){
-  cv_measures <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
-  n_measures <- length(cv_measures)
-  res <- matrix(0, cv_folds, n_measures)
-  
-  set.seed(seed)
-  
-  ids = sample(1:nrow(data))
-  fold = rep(1:10, length.out = nrow(data))
-  target_col = ncol(data)
-  y = as.factor(data[, target_col])
-  x = data[,-target_col]
-  for(i in 1:cv_folds){
-    xtrain = x[ids[fold != i], ]
-    ytrain = as.factor(y[ids[fold != i]])
-    xtest = x[ids[fold == i], ]
-    ytest = as.factor(y[ids[fold == i]])
-    model <- ExpertRuleFit(X=xtrain, y = ytrain, Xtest = xtest, ytest = ytest, intercept = intercept,
-                           optional_expert_rules = optional_expert_rules, 
-                           confirmatory_expert_rules = confirmatory_expert_rules,
-                           optional_linear_terms = optional_linear_terms, 
-                           confirmatory_linear_terms = confirmatory_linear_terms,
-                           expert_only = expert_only, optional_penalty = optional_penalty,
-                           ntree = ntree, ensemble = ensemble, mix = mix, L = L, S = S, minsup = minsup, 
-                           corelim = corelim, alpha = alpha, s = s, n_imp = n_imp,
-                           print_output = F)
-    
-    for(k in 1:length(cv_measures)){
-      res[i, k] <- model[[cv_measures[k]]]
-    }
-  }
-  
-  #print(res)
-  cv_res <- colMeans(res)
-  
-  #print(cv_res)
-  
-  out = list(NTerms = cv_res[1], AvgRuleLength = cv_res[2], AUC = cv_res[3], 
-             ClassErr = cv_res[4], PropEKImp = cv_res[5], PropEK = cv_res[6],
-             PropOptionalEK = cv_res[7])
-  
-  out
-  
-}
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# creates artificial concept drift
-
-concept_drift_split <- function(data, condition, train_frac = 0.7, cond = 0.8){
-  n_train = floor(train_frac*nrow(data))
-  data_cond = data %>% filter(eval(str2expression(condition)))
-  n_cond = nrow(data_cond)
-  data_rest = setdiff(data, data_cond)
-  frac_cond = n_cond/n_train
-  cat(sprintf(" %#.4f of the examples apply to the specified condition. \n", n_cond/nrow(data)))
-  cat(sprintf("\n"))
-  
-  if (frac_cond < cond){
-    train <- data_cond
-    n_extra <- n_train - nrow(train)
-    extra <- data_rest %>% sample_n(n_extra)
-    train <- rbind(train, extra)
-  } else{
-    train <- data_cond %>% sample_n(frac_cond*n_cond)
-    cat(sprintf(" %d examples from the %d examples defined as training set apply to the specified condition. \n", nrow(train), n_train))
-    n_extra <- n_train - nrow(train)
-    extra <- data_rest %>% sample_n(n_extra)
-    train <- rbind(train, extra)
-  }
-  
-  test <- setdiff(data, train)
-  
-  X <- train[, -ncol(train)]
-  Xtest <- test[, -ncol(test)]
-  
-  y <- train[, ncol(train)]
-  ytest <- test[, ncol(test)]
-  
-  
-  out <- list(X, y, Xtest, ytest)
-  out
-  
-}
-
 

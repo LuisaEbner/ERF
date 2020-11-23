@@ -5,28 +5,22 @@
 ################################################################################
 
 # Libraries
-# library(ggplot2)
-# library(plyr)
-# library(dplyr)
+library(ggplot2)
+library(plyr)
+library(dplyr)
 
 
 # External functions
 source("./experiments/diabetes/erf_diabetes_dataprep.R")
 source("./ERF/erf_main.R")
 
-#===============================================================================
-#                                 DATA
-#===============================================================================
-
-# Pima Indian Diabetes (UCI ML Repository)
-data <- read.csv(file = './data sets/diabetes.csv', header = T)
-data <- prepare_diabetes_data(data)
-
 
 #===============================================================================
 #                          EXPLORATORY ANALYSIS
 #===============================================================================
 
+data <- read.csv(file = './data sets/diabetes.csv', header = T)
+data <- prepare_diabetes_data(data)
 data$Age.greater.35 <- factor((as.numeric(data$Age > 35)), levels = c("0","1"))
 data$overweight <- factor((as.numeric(data$BMI > 30)), levels = c("0","1"))
 
@@ -135,9 +129,15 @@ pdf("y_age.pdf")
 p6
 dev.off()
 
+#===============================================================================
+#             MODEL COMPARISON: GENERALIZABILITY/CONCEPT DRIFT
+#===============================================================================
 
-# Concept Drift 1: younger vs. older population
+#===============================================================================
+#         Concept Drift 1: younger (<=35) vs. older population
+#===============================================================================
 
+# Data 
 data <- read.csv(file = './data sets/diabetes.csv', header = T)
 data <- prepare_diabetes_data(data)
 
@@ -147,34 +147,25 @@ X_age_drift <- age_drift[[1]]
 y_age_drift <- age_drift[[2]]
 Xtest_age_drift <- age_drift[[3]]
 ytest_age_drift <- age_drift[[4]]
+train_age_drift <- cbind(X_age_drift, y_age_drift)
+test_age_drift <- cbind(Xtest_age_drift, ytest_age_drift)
 
-# Concept Drift 2: normal weight vs. overweight population
-weight_drift <- concept_drift_split(data, "BMI > 30")
-X_weight_drift <- weight_drift[[1]]
-y_weight_drift <- weight_drift[[2]]
-Xtest_weight_drift <- weight_drift[[3]]
-ytest_weight_drift <- weight_drift[[4]]
+names(train_age_drift)[names(train_age_drift) == 'y_age_drift'] <- 'y'
+names(test_age_drift)[names(test_age_drift) == 'ytest_age_drift'] <- 'y'
+
 
 # Expert Knowledge
-
 source("./expert knowledge/diabetes/EK_diabetes.R")
-
 # Rules
 rules <- c(fdk_rules1, fdk_rules2, hek_rules)
 conf_rules <- support_take(rules, data, 0.05)
 opt_rules <- setdiff(rules, conf_rules)
-
 #  Linear Terms
 conf_linear <- c("Age", "BMI", "DPF")
 opt_linear <- c("BP", "Glucose")
 
 
-
-#===============================================================================
-#             MODEL COMPARISON: GENERALIZABILITY/CONCEPT DRIFT
-#===============================================================================
-
-# Experiments on the concept drift when splitting population into younger and older patients
+# Models
 
 erf_age <- ExpertRuleFit(X = X_age_drift, y = y_age_drift, Xtest = Xtest_age_drift,
                          ytest = ytest_age_drift, confirmatory_expert_rules = conf_rules, 
@@ -199,17 +190,97 @@ erf_only_age <- ExpertRuleFit(X = X_age_drift, y = y_age_drift, Xtest = Xtest_ag
 rf_age <- ExpertRuleFit(X = X_age_drift, y = y_age_drift, Xtest = Xtest_age_drift,
                         ytest = ytest_age_drift, print_output = F)
 
-pre_age 
+pre_age <- pre_for_comparison(train = train_age_drift, test = test_age_drift)
+
+age_drift_performance <- data.frame(AUC = c(erf_age$AUC, erf_prio_age$AUC, erf_only_age$AUC, rf_age$AUC, pre_age$AUC),
+                                    ClassErr = c(erf_age$ClassErr, erf_prio_age$ClassErr, erf_only_age$ClassErr, rf_age$ClassErr, pre_age$ClassErr),
+                                    NTerms = c(erf_age$NTerms, erf_prio_age$NTerms, erf_only_age$NTerms, rf_age$NTerms, pre_age$NTerms),
+                                    AvgRuleLength = c(erf_age$AvgRuleLength, erf_prio_age$AvgRuleLength, erf_only_age$AvgRuleLength, rf_age$AvgRuleLength, pre_age$AvgRuleLength), 
+                                    Model = c("ERF", "ERF EK prio", "ERF EK only", "RuleFit", "PRE"))
+
+age_drift_performance
+
+
+# Plots
+
+# 1. AUC Plot
+p1 <- ggplot(age_drift_performance, aes(x = Model, y=AUC, color = Model)) +
+  geom_point(size = 4) +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#4C9900")) + 
+  labs(title = "AUC in a concept drift setting (Age <=35)", x ="Model", y = "AUC") + 
+  scale_y_continuous(limits = c(0.5, 1)) +
+  theme_minimal() 
+
+p1
+pdf("AUC_Age35_conceptdrift_diabetes.pdf")
+p1
+dev.off()
+
+# 1. Classification Error Plot
+p2 <- ggplot(age_drift_performance, aes(x = Model, y = ClassErr, color = Model)) +
+  geom_point(size = 4) +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#4C9900")) + 
+  labs(title = "Classication Error in a concept drift setting (Age <=35)", x ="Model", y = "Classification Error") + 
+  scale_y_continuous(limits = c(0, 0.5)) +
+  theme_minimal() 
+
+p2
+pdf("CE_Age35_conceptdrift_diabetes.pdf")
+p2
+dev.off()
+
+# 1. NTerms Plot
+p3 <- ggplot(age_drift_performance, aes(x = Model, y=NTerms, color = Model)) +
+  geom_point(size = 4) +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#37004D")) + 
+  labs(title = "Model complexity in a concept drift setting (Age <=35)", x ="Model", y = "Number of terms") + 
+  theme_minimal() 
+
+p3
+pdf("NTerms_Age35_conceptdrift_diabetes.pdf")
+p3
+dev.off()
+
+# 1. AvgRuleLength Plot
+p4 <- ggplot(age_drift_performance, aes(x = Model, y=AvgRuleLength, color = Model)) +
+  geom_point(size = 4) +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#37004D")) + 
+  labs(title = "Model complexity in a concept drift setting (Age <=35)", x ="Model", y = "Average rule length") + 
+  scale_y_continuous(limits = c(0, 4)) +
+  theme_minimal() 
+
+p4
+pdf("AvgRuleLength_Age35_conceptdrift_diabetes.pdf")
+p4
+dev.off()
 
 #===============================================================================
+#         Concept Drift 2: normal weight vs. overweight population
+#===============================================================================
 
-# Experiments on the concept drift when splitting population into normal weight and overweight patients
+# Data
+weight_drift <- concept_drift_split(data, "BMI > 30")
+X_weight_drift <- weight_drift[[1]]
+y_weight_drift <- weight_drift[[2]]
+Xtest_weight_drift <- weight_drift[[3]]
+ytest_weight_drift <- weight_drift[[4]]
+train_weight_drift <- cbind(X_weight_drift, y_weight_drift)
+test_weight_drift <- cbind(Xtest_weight_drift, ytest_weight_drift)
 
+names(train_weight_drift)[names(train_weight_drift) == 'y_weight_drift'] <- 'y'
+names(test_weight_drift)[names(test_weight_drift) == 'ytest_weight_drift'] <- 'y'
+
+
+# Models
 erf_weight <- ExpertRuleFit(X = X_weight_drift, y = y_weight_drift, Xtest = Xtest_weight_drift,
                          ytest = ytest_weight_drift, confirmatory_expert_rules = conf_rules, 
                          optional_expert_rules = opt_rules, 
                          optional_linear_terms= opt_linear,
                          confirmatory_linear_terms = conf_linear, print_output = F)
+
+erf_conf_weight <- ExpertRuleFit(X = X_weight_drift, y = y_weight_drift, Xtest = Xtest_weight_drift,
+                            ytest = ytest_weight_drift, confirmatory_expert_rules = c(conf_rules, opt_rules), 
+                            confirmatory_linear_terms = c(conf_linear, opt_linear), print_output = F)
 
 erf_prio_weight <- ExpertRuleFit(X = X_weight_drift, y = y_weight_drift, Xtest = Xtest_weight_drift,
                               ytest = ytest_weight_drift, confirmatory_expert_rules = conf_rules, 
@@ -228,4 +299,68 @@ erf_only_weight <- ExpertRuleFit(X = X_weight_drift, y = y_weight_drift, Xtest =
 rf_weight <- ExpertRuleFit(X = X_weight_drift, y = y_weight_drift, Xtest = Xtest_weight_drift,
                         ytest = ytest_weight_drift, print_output = F)
 
-pre_weight 
+
+pre_weight <- pre_for_comparison(train = train_weight_drift, test = test_weight_drift)
+
+weight_drift_performance <- data.frame(AUC = c(erf_weight$AUC, erf_conf_weight$AUC, erf_prio_weight$AUC, erf_only_weight$AUC, rf_weight$AUC, pre_weight$AUC),
+                                    ClassErr = c(erf_weight$ClassErr, erf_conf_weight$ClassErr, erf_prio_weight$ClassErr, erf_only_weight$ClassErr, rf_weight$ClassErr, pre_weight$ClassErr),
+                                    NTerms = c(erf_weight$NTerms, erf_conf_weight$NTerms, erf_prio_weight$NTerms, erf_only_weight$NTerms, rf_weight$NTerms, pre_weight$NTerms),
+                                    AvgRuleLength = c(erf_weight$AvgRuleLength, erf_conf_weight$AvgRuleLength, erf_prio_weight$AvgRuleLength, erf_only_weight$AvgRuleLength, rf_weight$AvgRuleLength, pre_weight$AvgRuleLength), 
+                                    Model = c("ERF", "ERF EK conf", "ERF EK prio", "ERF EK only", "RuleFit", "PRE"))
+
+weight_drift_performance
+
+
+
+# Plots
+
+# 1. AUC Plot
+p5 <- ggplot(weight_drift_performance, aes(x = Model, y=AUC, color = Model)) +
+             geom_point(size = 4) +
+             scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#4C9900")) + 
+             labs(title = "AUC in a concept drift setting (trained on BMI > 30)", x ="Model", y = "AUC") + 
+             scale_y_continuous(limits = c(0.5, 1)) +
+             theme_minimal() 
+
+p5
+pdf("AUC_BMI30_conceptdrift_diabetes.pdf")
+p5
+dev.off()
+
+# 1. Classification Error Plot
+p6 <- ggplot(weight_drift_performance, aes(x = Model, y = ClassErr, color = Model)) +
+      geom_point(size = 4) +
+      scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#4C9900")) + 
+      labs(title = "Classication Error in a concept drift setting (BMI > 30)", x ="Model", y = "Classification Error") + 
+      scale_y_continuous(limits = c(0, 0.5)) +
+      theme_minimal() 
+
+p6
+pdf("CE_BMI30_conceptdrift_diabetes.pdf")
+p6
+dev.off()
+
+# 1. NTerms Plot
+p7 <- ggplot(weight_drift_performance, aes(x = Model, y=NTerms, color = Model)) +
+      geom_point(size = 4) +
+      scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#37004D")) + 
+      labs(title = "Model complexity in a concept drift setting (BMI > 30)", x ="Model", y = "Number of terms") + 
+      theme_minimal() 
+
+p7
+pdf("NTerms_BMI30_conceptdrift_diabetes.pdf")
+p7
+dev.off()
+
+# 1. AvgRuleLength Plot
+p8 <- ggplot(weight_drift_performance, aes(x = Model, y=AvgRuleLength, color = Model)) +
+      geom_point(size = 4) +
+      scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#37004D")) + 
+      labs(title = "Model complexity in a concept drift setting (trained on BMI > 30)", x ="Model", y = "Average rule length") + 
+      scale_y_continuous(limits = c(0, 4)) +
+      theme_minimal() 
+
+p8
+pdf("AvgRuleLength_BMI30_conceptdrift_diabetes.pdf")
+p8
+dev.off()
