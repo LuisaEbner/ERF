@@ -36,9 +36,52 @@ p1  <- ggplot(data, aes(x=Pregnancies, fill = overweight, color=overweight)) +
              scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
              scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
              labs(title="Pregnancies plot grouped by being overweight (BMI > 30)",x="Pregnancies", y = "Density")+
-             theme_classic()
+             theme(plot.title = element_text(size=15),
+                          legend.text=element_text(size=11),
+                          text = element_text(size = 14), 
+                          axis.text = element_text(size = 12)) 
 p1
 pdf("Pregnancies_overweight.pdf")
+p1
+dev.off()
+
+
+# b) Blood Pressure
+mu_bp_w <- ddply(data, "overweight", summarise, grp.mean=mean(BP))
+p1  <- ggplot(data, aes(x=BP, fill = overweight, color=overweight)) +
+  geom_histogram(aes(y=..density..), position="identity", alpha=0.3, binwidth = 5)+
+  geom_density(alpha=0.4)+
+  geom_vline(data=mu_bp_w, aes(xintercept=grp.mean, color=overweight), linetype="dashed")+
+  theme(legend.position="right") +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
+  labs(title="Blood pressure plot grouped by being overweight (BMI > 30)",x="Blood pressure", y = "Density")+
+  theme(plot.title = element_text(size=15),
+        legend.text=element_text(size=11),
+        text = element_text(size = 14), 
+        axis.text = element_text(size = 12)) 
+p1
+pdf("BP_overweight.pdf")
+p1
+dev.off()
+
+
+# a) Glucose
+mu_glucose_w <- ddply(data, "overweight", summarise, grp.mean=mean(Glucose))
+p1  <- ggplot(data, aes(x=Glucose, fill = overweight, color=overweight)) +
+  geom_histogram(aes(y=..density..), position="identity", alpha=0.3, binwidth = 5)+
+  geom_density(alpha=0.4)+
+  geom_vline(data=mu_glucose_w, aes(xintercept=grp.mean, color=overweight), linetype="dashed")+
+  theme(legend.position="right") +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
+  labs(title="Glucose plot grouped by being overweight (BMI > 30)",x="Glucose level", y = "Density")+
+  theme(plot.title = element_text(size=15),
+        legend.text=element_text(size=11),
+        text = element_text(size = 14), 
+        axis.text = element_text(size = 12)) 
+p1
+pdf("Glucose_overweight.pdf")
 p1
 dev.off()
 
@@ -53,7 +96,10 @@ p2 <-  ggplot(data, aes(x=as.numeric(y), fill = overweight, color=overweight)) +
              scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) + 
              theme(axis.text.x = element_blank()) +
              labs(title="Diabetes grouped by being overweight (BMI > 30)",x="Diabetes(1 = no, 2 = yes)", y = "Density")+
-             theme_classic()
+             theme(plot.title = element_text(size=15),
+                   legend.text=element_text(size=11),
+                   text = element_text(size = 14), 
+                   axis.text = element_text(size = 12)) 
 p2
 pdf("y_overweight.pdf")
 p2
@@ -73,7 +119,10 @@ p3 <-ggplot(data, aes(x=Pregnancies, fill = Age.greater.35, color=Age.greater.35
             scale_color_brewer(palette="Dark2")+
             scale_fill_brewer(palette="Dark2") +
             labs(title="Pregnancies plot grouped by Age (> 35)",x="Number of Pregnancies", y = "Density")+
-            theme_classic()
+            theme(plot.title = element_text(size=15),
+                  legend.text=element_text(size=11),
+                  text = element_text(size = 14), 
+                  axis.text = element_text(size = 12)) 
 p3
 pdf("Pregnancies_age.pdf")
 p3
@@ -90,7 +139,11 @@ p4  <- ggplot(data, aes(x=Glucose, fill = Age.greater.35, color=Age.greater.35))
               scale_color_brewer(palette="Dark2")+
               scale_fill_brewer(palette="Dark2") +
               labs(title="Glucose plot grouped by Age (> 35)",x="Glucose level", y = "Density")+
-              theme_classic()
+              theme(plot.title = element_text(size=15),
+                    legend.text=element_text(size=11),
+                    text = element_text(size = 14), 
+                    axis.text = element_text(size = 12)) 
+              
 p4
 pdf("Glucose_age.pdf")
 p4
@@ -107,7 +160,10 @@ p5 <-ggplot(data, aes(x=BP, fill = Age.greater.35, color=Age.greater.35)) +
             scale_color_brewer(palette="Dark2")+
             scale_fill_brewer(palette="Dark2")+
             labs(title="Blood pressure plot grouped by Age (> 35)",x="Blood Pressure", y = "Density")+
-            theme_classic()
+            theme(plot.title = element_text(size=15),
+                  legend.text=element_text(size=11),
+                  text = element_text(size = 14), 
+                  axis.text = element_text(size = 12)) 
 
 p5
 pdf("BP_age.pdf")
@@ -123,7 +179,10 @@ p6 <-ggplot(data, aes(x=as.numeric(y), fill = Age.greater.35, color=Age.greater.
              scale_color_brewer(palette="Dark2") +
              scale_fill_brewer(palette="Dark2") +
              labs(title="Histogram plot grouped by Age (> 35)",x="Diabetes (1 = no, 2 = yes)", y = "Density")+
-             theme_classic()
+             theme(plot.title = element_text(size=15),
+                    legend.text=element_text(size=11),
+                    text = element_text(size = 14), 
+                    axis.text = element_text(size = 12)) 
 p6
 pdf("y_age.pdf")
 p6
@@ -142,7 +201,7 @@ data <- read.csv(file = './data sets/diabetes.csv', header = T)
 data <- prepare_diabetes_data(data)
 
 set.seed(234567)
-age_drift <- concept_drift_split(data, "Age <= 35")
+age_drift <- concept_drift_split(data, "Age > 35")
 X_age_drift <- age_drift[[1]]
 y_age_drift <- age_drift[[2]]
 Xtest_age_drift <- age_drift[[3]]
@@ -158,8 +217,26 @@ names(test_age_drift)[names(test_age_drift) == 'ytest_age_drift'] <- 'y'
 source("./expert knowledge/diabetes/EK_diabetes.R")
 # Rules
 rules <- c(fdk_rules1, fdk_rules2, hek_rules)
-conf_rules <- support_take(rules, data, 0.05)
+
+age_rules <- c("Age<=39 & BP<=80 & BMI<25",
+               "Age<=39 & BP>=81 & BMI>=25 & BMI<=30",
+               "Age<=39 & BP<=80 & BMI>=31 & BMI<=40",
+               "Age<=39 & BP>=81 & BMI>=31 & BMI<=40",
+               "Age<=42 & BP<=80 & BMI<=29", 
+               "Age<=39 & BP>=81 & BMI<25",
+               "Age<=39 & BP>=81 & BMI>40", 
+               "Age<=31 & BP>=90 & BMI>=38",
+               "Age<=39 & BP<=80 & BMI>40",
+               "Age<=39 & BP<=80 & BMI>=25 & BMI<=30")
+
+sup_rules <- support_take(rules, data, 0.05)
+add_rules <- setdiff(sup_rules, age_rules)
+
+
+
+conf_rules <- c(age_rules, add_rules)
 opt_rules <- setdiff(rules, conf_rules)
+
 #  Linear Terms
 conf_linear <- c("Age", "BMI", "DPF")
 opt_linear <- c("BP", "Glucose")
@@ -207,9 +284,12 @@ age_drift_performance
 p1 <- ggplot(age_drift_performance, aes(x = Model, y=AUC, color = Model)) +
   geom_point(size = 4) +
   scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#4C9900")) + 
-  labs(title = "AUC in a concept drift setting (Age <=35)", x ="Model", y = "AUC") + 
+  labs(title = "AUC in a concept drift setting (train: Age >35)", x ="Model", y = "AUC") + 
   scale_y_continuous(limits = c(0.5, 1)) +
-  theme_minimal() 
+  theme_minimal() + theme(plot.title = element_text(size=15),
+                          legend.text=element_text(size=11),
+                          text = element_text(size = 14), 
+                          axis.text = element_text(size = 12)) 
 
 p1
 pdf("AUC_Age35_conceptdrift_diabetes.pdf")
@@ -220,8 +300,11 @@ dev.off()
 p2 <- ggplot(age_drift_performance, aes(x = Model, y = ClassErr, color = Model)) +
   geom_point(size = 4) +
   scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#4C9900")) + 
-  labs(title = "Classication Error in a concept drift setting (Age <=35)", x ="Model", y = "Classification Error") + 
-  scale_y_continuous(limits = c(0, 0.5)) +
+  labs(title = "Classication Error in a concept drift setting (train: Age>35)", x ="Model", y = "Classification Error") + 
+  scale_y_continuous(limits = c(0, 0.5)) + theme(plot.title = element_text(size=15),
+                                                    legend.text=element_text(size=11),
+                                                    text = element_text(size = 14), 
+                                                    axis.text = element_text(size = 12)) +
   theme_minimal() 
 
 p2
@@ -233,8 +316,12 @@ dev.off()
 p3 <- ggplot(age_drift_performance, aes(x = Model, y=NTerms, color = Model)) +
   geom_point(size = 4) +
   scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#37004D")) + 
-  labs(title = "Model complexity in a concept drift setting (Age <=35)", x ="Model", y = "Number of terms") + 
-  theme_minimal() 
+  labs(title = "Model complexity in a concept drift setting (train: Age>35)", x ="Model", y = "Number of terms") + 
+  theme_minimal() + scale_y_continuous(limits = c(0, 40)) +
+  theme(plot.title = element_text(size=15),
+                      legend.text=element_text(size=11),
+                      text = element_text(size = 14), 
+                      axis.text = element_text(size = 12))
 
 p3
 pdf("NTerms_Age35_conceptdrift_diabetes.pdf")
@@ -245,9 +332,11 @@ dev.off()
 p4 <- ggplot(age_drift_performance, aes(x = Model, y=AvgRuleLength, color = Model)) +
   geom_point(size = 4) +
   scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#37004D")) + 
-  labs(title = "Model complexity in a concept drift setting (Age <=35)", x ="Model", y = "Average rule length") + 
-  scale_y_continuous(limits = c(0, 4)) +
-  theme_minimal() 
+  labs(title = "Model complexity in a concept drift setting (train: Age>35)", x ="Model", y = "Average rule length") + 
+  scale_y_continuous(limits = c(0, 4)) + theme(plot.title = element_text(size=15),
+                                               legend.text=element_text(size=11),
+                                               text = element_text(size = 14), 
+                                               axis.text = element_text(size = 12)) 
 
 p4
 pdf("AvgRuleLength_Age35_conceptdrift_diabetes.pdf")
@@ -269,6 +358,44 @@ test_weight_drift <- cbind(Xtest_weight_drift, ytest_weight_drift)
 
 names(train_weight_drift)[names(train_weight_drift) == 'y_weight_drift'] <- 'y'
 names(test_weight_drift)[names(test_weight_drift) == 'ytest_weight_drift'] <- 'y'
+
+# EK
+
+# Expert Knowledge
+source("./expert knowledge/diabetes/EK_diabetes.R")
+# Rules
+rules <- c(fdk_rules1, fdk_rules2, hek_rules)
+rules
+
+weight_rules <- c( "Age<=39 & BP<=80 & BMI<25", "Age>=40 & Age<=49 & BP<=80 & BMI<25",           
+                   "Age>=50 & Age<=59 & BP<=80 & BMI<25",          
+                   "Age>=60 & BP<=80 & BMI<25", "Age<=39 & BP>=81 & BMI<25",
+                   "Age>=40 & Age<=49 & BP>=81 & BMI<25",          
+                   "Age>=50 & Age<=59 & BP>=81 & BMI<25",
+                   "Age>=60 & BP>=81 & BMI<25", "Age<=39 & BP<=80 & BMI>=25 & BMI<=30",          
+                   "Age>=40 & Age<=49 & BP<=80 & BMI>=25 & BMI<=30",
+                   "Age>=50 & Age<=59 & BP<=80 & BMI>=25 & BMI<=30",
+                   "Age>=60 & BP<=80 & BMI>=25 & BMI<=30",         
+                   "Age<=39 & BP>=81 & BMI>=25 & BMI<=30",
+                   "Age>=40 & Age<=49 & BP>=81 & BMI>=25 & BMI<=30",
+                   "Age>=50 & Age<=59 & BP>=81 & BMI>=25 & BMI<=30",
+                   "BMI<=24", "BMI>24 & BMI<=26", 
+                   "Age<=60 & BP<=90 & BMI<=30 & Glucose<=100",
+                   "Age>=55 & BP<=90 & BMI<=30 & Glucose>=130",
+                   "Age<=42 & BP<=80 & BMI<=29",
+                   "Age>=55 & BP<=80 & BMI<=29")
+
+sup_rules <- support_take(rules, data, 0.05)
+add_rules <- setdiff(sup_rules, weight_rules)
+
+
+
+conf_rules <- c(weight_rules, add_rules)
+opt_rules <- setdiff(rules, conf_rules)
+
+#  Linear Terms
+conf_linear <- c("Age", "BMI", "DPF")
+opt_linear <- c("BP", "Glucose")
 
 
 # Models
@@ -306,7 +433,7 @@ weight_drift_performance <- data.frame(AUC = c(erf_weight$AUC, erf_conf_weight$A
                                     ClassErr = c(erf_weight$ClassErr, erf_conf_weight$ClassErr, erf_prio_weight$ClassErr, erf_only_weight$ClassErr, rf_weight$ClassErr, pre_weight$ClassErr),
                                     NTerms = c(erf_weight$NTerms, erf_conf_weight$NTerms, erf_prio_weight$NTerms, erf_only_weight$NTerms, rf_weight$NTerms, pre_weight$NTerms),
                                     AvgRuleLength = c(erf_weight$AvgRuleLength, erf_conf_weight$AvgRuleLength, erf_prio_weight$AvgRuleLength, erf_only_weight$AvgRuleLength, rf_weight$AvgRuleLength, pre_weight$AvgRuleLength), 
-                                    Model = c("ERF", "ERF EK conf", "ERF EK prio", "ERF EK only", "RuleFit", "PRE"))
+                                    Model = c("ERF", "ERF conf", "ERF prio", "ERF only", "RuleFit", "PRE"))
 
 weight_drift_performance
 
@@ -317,10 +444,12 @@ weight_drift_performance
 # 1. AUC Plot
 p5 <- ggplot(weight_drift_performance, aes(x = Model, y=AUC, color = Model)) +
              geom_point(size = 4) +
-             scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#4C9900")) + 
-             labs(title = "AUC in a concept drift setting (trained on BMI > 30)", x ="Model", y = "AUC") + 
-             scale_y_continuous(limits = c(0.5, 1)) +
-             theme_minimal() 
+             scale_color_manual(values=c("#999999", "#4C9900", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
+             labs(title = "AUC in a concept drift setting (trained: BMI>30)", x ="Model", y = "AUC") + 
+             scale_y_continuous(limits = c(0.5, 1)) + theme(plot.title = element_text(size=15),
+                                                                          legend.text=element_text(size=11),
+                                                                          text = element_text(size = 14), 
+                                                                          axis.text = element_text(size = 12))
 
 p5
 pdf("AUC_BMI30_conceptdrift_diabetes.pdf")
@@ -330,10 +459,12 @@ dev.off()
 # 1. Classification Error Plot
 p6 <- ggplot(weight_drift_performance, aes(x = Model, y = ClassErr, color = Model)) +
       geom_point(size = 4) +
-      scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#4C9900")) + 
-      labs(title = "Classication Error in a concept drift setting (BMI > 30)", x ="Model", y = "Classification Error") + 
-      scale_y_continuous(limits = c(0, 0.5)) +
-      theme_minimal() 
+      scale_color_manual(values=c("#999999", "#4C9900", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
+      labs(title = "Classication Error in a concept drift setting (train: BMI>30)", x ="Model", y = "Classification Error") + 
+      scale_y_continuous(limits = c(0, 0.5)) + theme(plot.title = element_text(size=15),
+                                                        legend.text=element_text(size=11),
+                                                        text = element_text(size = 14), 
+                                                        axis.text = element_text(size = 12))
 
 p6
 pdf("CE_BMI30_conceptdrift_diabetes.pdf")
@@ -343,9 +474,13 @@ dev.off()
 # 1. NTerms Plot
 p7 <- ggplot(weight_drift_performance, aes(x = Model, y=NTerms, color = Model)) +
       geom_point(size = 4) +
-      scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#37004D")) + 
-      labs(title = "Model complexity in a concept drift setting (BMI > 30)", x ="Model", y = "Number of terms") + 
-      theme_minimal() 
+      scale_color_manual(values=c("#999999", "#4C9900", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
+      labs(title = "Model complexity in a concept drift setting (train: BMI>30)", x ="Model", y = "Number of terms") + 
+      scale_y_continuous(limits = c(0, 40)) +
+      theme(plot.title = element_text(size=15),
+          legend.text=element_text(size=11),
+          text = element_text(size = 14), 
+          axis.text = element_text(size = 12))
 
 p7
 pdf("NTerms_BMI30_conceptdrift_diabetes.pdf")
@@ -355,10 +490,12 @@ dev.off()
 # 1. AvgRuleLength Plot
 p8 <- ggplot(weight_drift_performance, aes(x = Model, y=AvgRuleLength, color = Model)) +
       geom_point(size = 4) +
-      scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c", "#37004D")) + 
-      labs(title = "Model complexity in a concept drift setting (trained on BMI > 30)", x ="Model", y = "Average rule length") + 
-      scale_y_continuous(limits = c(0, 4)) +
-      theme_minimal() 
+      scale_color_manual(values=c("#999999", "#4C9900", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
+      labs(title = "Model complexity in a concept drift setting (train: BMI>30)", x ="Model", y = "Average rule length") + 
+      scale_y_continuous(limits = c(0, 4))  + theme(plot.title = element_text(size=15),
+                                                    legend.text=element_text(size=11),
+                                                    text = element_text(size = 14), 
+                                                    axis.text = element_text(size = 12))
 
 p8
 pdf("AvgRuleLength_BMI30_conceptdrift_diabetes.pdf")

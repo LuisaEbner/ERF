@@ -203,26 +203,27 @@ row.names(rf_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "Pr
 
 
 # PRE Model 1 (use full data set)
-pre_full <- pre_for_comparison(data)
+pre_full <- CV_pre(data)
 
 # PRE Model 2 (600 obs)
-pre_600 <- pre_for_comparison(data_600)
+pre_600 <- CV_pre(data_600)
 
 # PRE Model 3 (400 obs)
-pre_400 <- pre_for_comparison(data_400)
+pre_400 <- CV_pre(data_400)
 
 
 # PRE Model 4 (200 obs)
-pre_200 <- pre_for_comparison(data_200)
+pre_200 <- CV_pre(data_200)
 
 
 # create dataframe to plot 
-pre_vec_200 <- unlist(pre_200[c(1:6)], use.names=FALSE)
-pre_vec_400 <- unlist(pre_400[c(1:6)], use.names=FALSE)
-pre_vec_600 <- unlist(pre_600[c(1:6)], use.names=FALSE)
-pre_vec_full <- unlist(pre_full[c(1:6)], use.names=FALSE)
+pre_vec_200 <- unlist(pre_200, use.names=FALSE)
+pre_vec_400 <- unlist(pre_400, use.names=FALSE)
+pre_vec_600 <- unlist(pre_600, use.names=FALSE)
+pre_vec_full <- unlist(pre_full, use.names=FALSE)
 
-pre_performance <- data.frame(pre_full = c(pre_vec_full, 0), pre_600 = c(pre_vec_600,0), pre_400 = c(pre_vec_400,0), pre_200 = c(pre_vec_200,0))
+pre_performance <- data.frame(pre_full = c(pre_vec_full, 0,0,0), pre_600 = c(pre_vec_600,0,0,0), 
+                              pre_400 = c(pre_vec_400,0,0,0), pre_200 = c(pre_vec_200,0,0,0))
 row.names(pre_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
 
 #===============================================================================
@@ -257,8 +258,12 @@ p1 <- ggplot(comparison_df,
        aes(x = Sample, y=NTerms, color = Model, group = Model)) +
        geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
-       labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "Number of terms") + 
-       theme_minimal() +
+       labs(title = "Model complexity for varying dataset sizes", x ="dataset size", y = "Number of terms") + 
+       theme_minimal() + theme(plot.title = element_text(size=15),
+                               legend.text=element_text(size=11),
+                               text = element_text(size = 14), 
+                               axis.text = element_text(size = 12)) +
+       scale_y_continuous(limits = c(0, 40)) +
        theme(legend.position = "right") 
 
 p1
@@ -272,8 +277,12 @@ p2 <- ggplot(comparison_df,
         aes(x = Sample, y=AvgRuleLength, color = Model, group = Model)) +
         geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
         scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-        labs(title = "Model complexity for varying dataset sizes", x ="Number of data points", y = "Average rule length") + 
-        theme_minimal() +
+        labs(title = "Rule complexity for varying dataset sizes", x ="dataset size", y = "Average rule length") + 
+        theme_minimal() + theme(plot.title = element_text(size=15),
+                                legend.text=element_text(size=11),
+                                text = element_text(size = 14), 
+                                axis.text = element_text(size = 12)) +
+        scale_y_continuous(limits = c(1, 3)) +
         theme(legend.position = "right") 
 
 p2
@@ -287,8 +296,12 @@ p3 <- ggplot(comparison_df,
        aes(x = Sample, y=AUC, color = Model, group = Model)) +
         geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
         scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-        labs(title = "Predictive performance for varying dataset sizes", x ="Number of data points", y = "AUC") + 
-        theme_minimal() +
+        labs(title = "Predictive performance for varying dataset sizes", x ="dataset size", y = "AUC") + 
+        theme_minimal() + theme(plot.title = element_text(size=15),
+                                legend.text=element_text(size=11),
+                                text = element_text(size = 14), 
+                                axis.text = element_text(size = 12)) +
+        scale_y_continuous(limits = c(0.5, 1)) +
         theme(legend.position = "right") 
 
 p3
@@ -302,8 +315,12 @@ p4 <- ggplot(comparison_df,
        aes(x = Sample, y=ClassErr, color = Model, group = Model)) +
       geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
       scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-      labs(title = "Predictive performance for varying dataset sizes", x ="Number of data points", y = "Classification Error") + 
-      theme_minimal() +
+      labs(title = "Predictive performance for varying dataset sizes", x ="dataset size", y = "Classification Error") + 
+      theme_minimal() + theme(plot.title = element_text(size=15),
+                              legend.text=element_text(size=11),
+                              text = element_text(size = 14), 
+                              axis.text = element_text(size = 12)) +
+      scale_y_continuous(limits = c(0, 0.5)) +
       theme(legend.position = "right") 
 
 p4
@@ -318,8 +335,11 @@ p5 <- ggplot(comparison_df,
              aes(x = Sample, y=PropEKImp, color = Model, group = Model)) +
              geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
              scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-             labs(title = "Proportion of EK for varying dataset sizes", x ="Number of data points", y = "Proportion of EK among the 10 most important terms") + 
-             theme_minimal() +
+             labs(title = "Proportion of EK for varying dataset sizes", x ="dataset size", y = "Proportion of EK among the 10 most important terms") + 
+             theme_minimal() + theme(plot.title = element_text(size=15),
+                                     legend.text=element_text(size=11),
+                                     text = element_text(size = 14), 
+                                     axis.text = element_text(size = 12)) +
              theme(legend.position = "right") 
 
 p5
@@ -333,8 +353,11 @@ p6 <- ggplot(comparison_df,
         aes(x = Sample, y=PropEK, color = Model, group = Model)) +
         geom_point(size = 3) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
         scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-        labs(title = "Proportion of EK for varying dataset sizes", x ="Number of data points", y = "Proportion of EK") + 
-        theme_minimal() +
+        labs(title = "Proportion of EK for varying dataset sizes", x ="dataset size", y = "Proportion of EK") + 
+        theme_minimal() + theme(plot.title = element_text(size=15),
+                                legend.text=element_text(size=11),
+                                text = element_text(size = 14), 
+                                axis.text = element_text(size = 12)) +
         theme(legend.position = "right") 
 
 p6
