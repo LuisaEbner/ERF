@@ -84,7 +84,6 @@ createERFsets <- function(data, train_frac, n_obs = NULL, pos_class = 1, target_
   #print(data)
   
   # split training- and test data
-  set.seed(45)
   train.index <- createDataPartition(data$y, p = train_frac, list = FALSE)
   train <- data[ train.index,]
   test  <- data[-train.index,]
@@ -258,21 +257,22 @@ average_rule_length <- function(rules){
 #' @description selects the n model terms with the greatest model coefficients indicating most important rules and linear terms.
 
 imp_terms <- function(model, n){
-  nt <- length(model$features)
+  nt <- length(model$features)-1
   if(n < nt){
-    largest_coefs <- sort(model[,2], decreasing = T)[1:n]
+    largest_coefs <- sort(model[-1,2], decreasing = T)[1:n]
   } else{
-    largest_coefs <- sort(model[,2], decreasing = T)[1:nt]
+    largest_coefs <- sort(model[-1,2], decreasing = T)[1:nt]
   }
   
+  print(largest_coefs)
   largest_pos <- c()
   if(length(largest_coefs) > 0){
-    for(i in 1: length(largest_coefs)){
+    for(i in 1:length(largest_coefs)){
       largest_pos[i] <- which(model[,2] == largest_coefs[i])
     } 
   }
 
-  imp_terms <- model[,1][largest_pos]
+  imp_terms <- model[-1,1][largest_pos]
   imp_terms
 }
 
@@ -308,7 +308,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                                    optional_cols = NULL,
                                    optional_penalty = 1,
                                    alpha = 1, standardize = F, 
-                                   n = 5, print_output = T){
+                                   n = 5, expert_only = F, print_output = T){
   
   
   # define penalties according to confirmatory and optional columns
@@ -327,32 +327,43 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   }
   
   # find best lambda via cross validation
-  cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", 
-                     alpha = alpha, 
-                     standardize = standardize, 
-                     penalty.factor = p.fac)
   
-  if (s == "lambda.min"){
-    lambda <- cvfit$lambda.min
+  
+  if(expert_only == F){
+    cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", 
+                       alpha = alpha, 
+                       standardize = standardize, 
+                       penalty.factor = p.fac)
+    
+    if (s == "lambda.min"){
+      lambda <- cvfit$lambda.min
+    } else{
+      lambda <- cvfit$lambda.1se
+    }
+    
+    fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha,
+                  standardize = standardize, penalty.factor = p.fac)
+    # attribute coefficients
+    coefs <- coef(fit, s=lambda)
   } else{
-    lambda <- cvfit$lambda.1se
+    lambda = 0
+    fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha,
+                  standardize = standardize)
+    # attribute coefficients
+    coefs <- coef(fit, s=lambda)
   }
-  
-  fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha,
-                standardize = standardize, penalty.factor = p.fac)
-  
-  # attribute coefficients
-  coefs <- coef(fit, s=lambda)
+
   
   
   # number of non-zero coefficients (= number of terms/features)
-  n_terms = length(coefs[which(coefs != 0 ) ]) -1
+  n_terms = length(coefs[which(coefs != 0 ) ])-1
   
   Results <- data.frame( features = coefs@Dimnames[[1]][which(coefs != 0 ) ], 
                          coefficients    = coefs       [ which(coefs != 0 ) ]
   )
   
   #Results$features <- positions_to_names(X, Results$features)
+  #print(length(Results$features))
   
   # Average rule length
   avgrulelen <- average_rule_length(Results$features)
@@ -555,7 +566,7 @@ support_take <- function(rules, data, minsup){
     }
   }
   sup_frame <- data.frame(rules = rules, support_values = sup_vals)
-  sup_frame <- sup_frame %>% filter((support_values > minsup) & support_values < (1-minsup))
+  sup_frame <- sup_frame %>% filter((support_values >= minsup) & support_values <= (1-minsup))
   out <- sup_frame$rules
   out
 }
@@ -668,7 +679,7 @@ CV_pre <- function(data = NULL, cv_folds = 10, seed = 1432,
 
 # Cross Validation:
 
-CV_erf <- function(data, cv_folds = 10, seed = 1432, intercept=T,
+CV_erf <- function(data, cv_folds = 10, intercept=T,
                    optional_expert_rules = NULL, confirmatory_expert_rules = NULL,  
                    optional_linear_terms=NULL, confirmatory_linear_terms = NULL,
                    expert_only = F, optional_penalty = 1,
@@ -678,6 +689,8 @@ CV_erf <- function(data, cv_folds = 10, seed = 1432, intercept=T,
   cv_measures <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
   n_measures <- length(cv_measures)
   res <- matrix(0, cv_folds, n_measures)
+  
+  seed <- sample(1:10000, 1)
   
   set.seed(seed)
   
@@ -910,7 +923,6 @@ genrulesGBM = function(X, y, nt, S, L) {
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 createX = function(X, rules, t, corelim=1){
   Xr = matrix(0, nrow=dim(X)[1], ncol=length(rules))
   for (i in 1:length(rules)){
@@ -919,25 +931,34 @@ createX = function(X, rules, t, corelim=1){
   
   Nr = dim(Xr)[2]
   ind = 1:Nr
-  if(dim(X)[1]<200){
-    t= 0.05
-  }
+  #if(dim(X)[1]<200){
+  #  t= 0.001
+  #}
   
   sup  = apply(Xr, 2, mean)
-  elim = which((sup<t)|(sup>(1-t)))
+  # print(sup)
+  elim = which((sup<=t)|(sup>=(1-t)))
+  
+  #print(elim)
   
   if(length(elim)>0){
     ind = ind[-elim]
   }
   
   cMat      = abs(cor(Xr[,ind])) >= (corelim)
+
   whichKeep = which(rowSums(lower.tri(cMat) * cMat) == 0)
   
+  
   ind = ind[whichKeep]
+  
+  
   Xr = Xr[,ind]
   rules = rules[ind]
+  
   list(data.matrix(Xr), rules)
 }
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

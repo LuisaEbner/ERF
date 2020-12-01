@@ -39,6 +39,7 @@ create_simulation <- function(n_vars = 100, n_obs = 2000,
                               n_rel_rules = 10, 
                               optional_lengths = c(1, 2),
                               weights = c(1/2, 1/2),
+                              t = 0.01,
                               mu_beta = 0, sigma_beta = 5, 
                               mu_epsilon = 0, sigma_epsilon = 0.25){
   
@@ -82,7 +83,7 @@ create_simulation <- function(n_vars = 100, n_obs = 2000,
 
   
   # 4. createX as relevant to the outcome variable
-  dt <- createX(X, rule_preds, t = 0.025)
+  dt <- createX(X = X, rules = rule_preds, t = t, corelim = 1)
 
   
   # 5. Sample the betas 
@@ -96,7 +97,7 @@ create_simulation <- function(n_vars = 100, n_obs = 2000,
   # 7. Calculate the outcome probabilities while adding random noise
   dt_y <- as.data.frame(dt[1])
   linear_predictor <- calc_linear_predictor(dt_y, betas)
-  y1_prob <- round(1/(1 + exp(-(linear_predictor))),3)
+  y1_prob <- round(1/(1 + exp(-(linear_predictor))),6)
 
   # 8. Sample binary class outcome from Bernoulli distirbution with prob = y1_prob
   y <- sample_y(y1_prob)

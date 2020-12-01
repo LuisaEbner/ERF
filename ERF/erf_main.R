@@ -83,7 +83,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                          optional_linear_terms=NULL, confirmatory_linear_terms = NULL,
                          expert_only = F, optional_penalty = 1, ntree=250, 
                          ensemble= "GBM", mix=0.5, L=3, S=6, minsup=.025, corelim = 1, 
-                         alpha = 1, s = "lambda.1se", standardize = F,
+                         alpha = 0.8, s = "lambda.1se", standardize = F,
                          n_imp = 10, print_output = T) {
   
   # combine optional and confirmatory EK 
@@ -184,39 +184,38 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     stop("Invalid choice regarding output print. Must be TRUE or FALSE.")
   }
   
-  
-  # tree ensemble -> rule ensemble
   N = length(y)
-  if (ensemble == "RF") {
-    capture.output(rulesf <- genrulesRF(X, y, nt=ntree, S=S, L=L))
-  } else if (ensemble == "GBM") {
-    capture.output(rulesf <- genrulesGBM(X, y, nt=ntree,S=S, L=L))
-  } else if (ensemble == "both"){
-    capture.output(rules1 <- genrulesRF(X, y, nt=round(ntree*mix),
-                                        S=S, L=L))
-    capture.output(rules2 <- genrulesGBM(X, y, nt=round(ntree*(1-mix)),
-                                         S=S, L=L))
-    rulesf = c(rules1, rules2)
-  } else {
-    print("invalid Tree ensemble choice")
+
+  if(expert_only == T){
+    dt = createX(X = X, rules = all_expert_rules, t = 0, corelim = 1)
+    Xr = dt[[1]]
+    rulesFin = dt[[2]]
+  }else{
+    if (ensemble == "RF") {
+      capture.output(rulesf <- genrulesRF(X, y, nt=ntree, S=S, L=L))
+    } else if (ensemble == "GBM") {
+      capture.output(rulesf <- genrulesGBM(X, y, nt=ntree,S=S, L=L))
+    } else if (ensemble == "both"){
+      capture.output(rules1 <- genrulesRF(X, y, nt=round(ntree*mix),
+                                          S=S, L=L))
+      capture.output(rules2 <- genrulesGBM(X, y, nt=round(ntree*(1-mix)),
+                                           S=S, L=L))
+      rulesf = c(rules1, rules2)
+    } else {
+      print("invalid Tree ensemble choice")
+    }
+    
+    # add expert rules to rule ensemble if present
+    if(!(is.null(all_expert_rules))){
+      rulesf <- c(rulesf, all_expert_rules)
+    }
+    
+    dt = createX(X = X, rules = rulesf, t = minsup, corelim = corelim)
+    Xr = dt[[1]]
+    rulesFin = dt[[2]]
   }
   
-  # add expert rules to rule ensemble if present
-  if(!(is.null(all_expert_rules))){
-    rulesf <- c(rulesf, all_expert_rules)
-  }
-  
-  
-  # create data matrix with rules as columns
-  dt = createX(X = X, rules = rulesf, t = minsup, corelim = corelim)
-  Xr = dt[[1]]
-  
-  # initial set of rules
-  rulesFin = dt[[2]]
-  
-  # get the expert rules, that were removed from createX due to too low/high 
-  # support or high correlation
-  
+
   if (!(is.null(all_expert_rules))){
     removed_expertrules <- c()
     for (i in 1:length(all_expert_rules)){
@@ -261,6 +260,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     }
   } 
   
+
   
   # change column names: intercept = X0, linear terms = X1,...Xp, rules as specified conditions
   if((intercept == TRUE) & (!(is.null(all_linear_terms)))){
@@ -275,13 +275,6 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     colnames(Xt)[(length(all_linear_terms)+1): ncol(Xt)] <- rulesFin
   } else{ 
     colnames(Xt) <- rulesFin
-  }
-  
-  
-  if(expert_only == T){
-    keep_all <- c(all_expert_rules, optional_linear_terms, confirmatory_linear_terms)
-    keep_in <- names(Xt)[(names(Xt) %in% keep_all)]
-    Xt <- subset(Xt, select = keep_in)
   }
   
   
@@ -339,7 +332,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                                       optional_cols = optional_cols,
                                       optional_penalty = optional_penalty,
                                       alpha = alpha, standardize = standardize,
-                                      n = n_imp,
+                                      n = n_imp, expert_only = expert_only,
                                       print_output = print_output)
     
     
@@ -466,14 +459,15 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
       colnames(X_test) <- rulesFin
     }
     
-    if(expert_only == T){
+    #if(expert_only == T){
       #print(colnames(X_test))
-      keep_all <- c(all_expert_rules, optional_linear_terms, confirmatory_linear_terms)
+      #keep_all <- c(all_expert_rules, optional_linear_terms, confirmatory_linear_terms)
       #print(keep_all)
-      keep_in <- names(X_test)[(names(X_test) %in% keep_all)]
+      #keep_in <- names(X_test)[(names(X_test) %in% keep_all)]
       #print(keep_in)
-      X_test <- subset(X_test, select = keep_in)
-    }
+      #X_test <- subset(X_test, select = keep_in)
+    #}
+    
     
     # add prediction and error to model output
     regmodel = regularized_regression(X = Xt, y = y, Xtest = X_test,
@@ -484,6 +478,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                                       optional_penalty = optional_penalty,
                                       alpha = alpha,
                                       standardize = standardize, n = n_imp,
+                                      expert_only = expert_only,
                                       print_output = print_output)
     
     
