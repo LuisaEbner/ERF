@@ -258,13 +258,13 @@ average_rule_length <- function(rules){
 
 imp_terms <- function(model, n){
   nt <- length(model$features)-1
+
   if(n < nt){
     largest_coefs <- sort(model[-1,2], decreasing = T)[1:n]
   } else{
     largest_coefs <- sort(model[-1,2], decreasing = T)[1:nt]
   }
-  
-  print(largest_coefs)
+
   largest_pos <- c()
   if(length(largest_coefs) > 0){
     for(i in 1:length(largest_coefs)){
@@ -272,7 +272,7 @@ imp_terms <- function(model, n){
     } 
   }
 
-  imp_terms <- model[-1,1][largest_pos]
+  imp_terms <- model[,1][largest_pos]
   imp_terms
 }
 
@@ -582,7 +582,8 @@ pre_for_comparison <- function(data = NULL, train = NULL, test = NULL,
     test  <- data[-train.index,]
   } 
   
-  pre <- pre(y ~ ., data = train, family = "binomial", ntrees = ntrees)
+  pre <- pre(y ~ ., data = train, family = "binomial", ntrees = ntrees, 
+             penalty.par.val = "lambda.min")
  
   coefficients <- coef(pre)$coefficient[coef(pre)$coefficient != 0] 
   nterms <- length(coefficients) -1
@@ -679,7 +680,7 @@ CV_pre <- function(data = NULL, cv_folds = 10, seed = 1432,
 
 # Cross Validation:
 
-CV_erf <- function(data, cv_folds = 10, intercept=T,
+CV_erf <- function(data, cv_folds = 10, seed = 34593, intercept=T,
                    optional_expert_rules = NULL, confirmatory_expert_rules = NULL,  
                    optional_linear_terms=NULL, confirmatory_linear_terms = NULL,
                    expert_only = F, optional_penalty = 1,
@@ -690,7 +691,6 @@ CV_erf <- function(data, cv_folds = 10, intercept=T,
   n_measures <- length(cv_measures)
   res <- matrix(0, cv_folds, n_measures)
   
-  seed <- sample(1:10000, 1)
   
   set.seed(seed)
   

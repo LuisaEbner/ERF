@@ -20,7 +20,7 @@ simulation <- create_simulation(n_vars = 30, n_obs = 1000,
                                 optional_lengths = c(1, 2, 3),
                                 weights = c(1/3, 1/3, 1/3),
                                 mu_beta = 0, sigma_beta = 5, 
-                                mu_epsilon = 0, sigma_epsilon = 0)
+                                mu_epsilon = 0, sigma_epsilon = 0.01)
 
 #===============================================================================
 #                                 DATA 
@@ -53,7 +53,7 @@ opt_rules <- setdiff(expert_rules, conf_rules)
 
 erf_sim <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest,
                          confirmatory_expert_rules = conf_rules,  
-                         optional_expert_rules = opt_rules, expert_only = F)
+                         optional_expert_rules = opt_rules, expert_only = T)
 
 erf_sim2 <- ExpertRuleFit(X=X, y=y, Xtest=Xtest, ytest=ytest)
 
