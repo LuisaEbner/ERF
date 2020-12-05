@@ -24,39 +24,9 @@ opt_rules <- setdiff(rules, conf_rules)
 
 #  Linear Terms
 # confirmatory: those confirmed by experts and literature!
-# hier könnte man auch alle conf setzen!
+# hier kC6nnte man auch alle conf setzen!
 
 conf_linear <- c("Age", "BMI", "DPF", "BP", "Glucose")
-
-# Guideline Rules (Risk Levels)
-# confirmatory: level: 1-2+6-11, optional: level 3-5
-g1conf <- c("Age<=39 & BP<=80 & BMI<25",
-           "Age>=40 & Age<=49 & B<=80 & BMI<25",
-           "Age<=39 & BP>=81 & BMI<25",
-           "Age<=39 & BP<=80 & BMI>=25 & BMI<=30",
-           "Age>=60 & BP>=81 & BMI>=25 & BMI<=30",
-           "Age>=60 & BP<=80 & BMI>=31 & BMI<=40",
-           "Age>=50 & Age<=59 & BP>=81 & BMI>=31 & BMI<=40",
-           "Age>=60 & BP>=81 & BMI>=31 & BMI<=40",
-           "Age>=50 & Age<=59 & BP<=80 & BMI>40",
-           "Age>=60 & BP<=80 & BMI>40",
-           "Age<=39 & BP>=81 & BMI>40",
-           "Age>=40 & Age<=49 & BP>=81 &  BMI>40",
-           "Age>=50 & Age<=59 &  BP>=81 & BMI>40",
-           "Age>=60 & BP>=81 & BMI>40")
-
-# confirmatory: levels: low, high, very high - optional: level increased
-g2conf <- c("Glucose<=100", "Glucose > 110", 
-            "BP <= 85", "BP > 90", "BMI <= 24", "BMI > 26",
-            "Glucose>110 & BP>90", "Glucose>110 & BMI>26",
-            "BP>90 & BMI>26", "Glucose>110 & BP>90 & BMI>26")
-
-econf <- c("Age<=42 & BP<=80 & BMI<=29",
-           "Age>=55 & BP<=80 & BMI<=29",
-           "Age >= 60 & Glucose >= 130 & BMI >= 35",
-           "Age >= 60 & BP >= 90 & BMI >= 37",
-           "Age >= 45 & BP >= 90 & BMI >= 35 & Glucose >= 130",
-           "Age <= 60 & BP <= 90 & BMI <= 30 & Glucose <= 100")
 
 #===============================================================================
 #                 EXPERIMENT: VARYING DATASET SIZES
