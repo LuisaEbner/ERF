@@ -15,9 +15,9 @@ source("./ERF/erf_main.R")
 
 # todo: try lambda.min
 
-sample_variations <- function(conf_support = 0.01, sample_sizes = c(600, 400, 200), 
-                              cv_folds = 1, optional_penalty = 0.5){
-        simulation <- create_simulation(n_vars = 30, n_obs = 1000,
+sample_variations <- function(sample_sizes = c(600, 400, 200), 
+                              cv_folds = 5, optional_penalty = 0.5){
+        simulation <- create_simulation(n_vars = 50, n_obs = 1000,
                                         mu = 0, sigma = 1, 
                                         n_rule_vars = 10, 
                                         n_rel_rules = 20, 
@@ -32,7 +32,9 @@ sample_variations <- function(conf_support = 0.01, sample_sizes = c(600, 400, 20
         data_200 <- sample_n(data, sample_sizes[3])
         
         expert_rules <- simulation[[3]]
-        conf_rules <- expert_rules[1:17]
+        conf_rules <- support_take(expert_rules, data, 0.05)
+        print(length(conf_rules))
+        
         opt_rules <- setdiff(expert_rules, conf_rules)
         
         # ERF
@@ -57,7 +59,7 @@ sample_variations <- function(conf_support = 0.01, sample_sizes = c(600, 400, 20
         row.names(erf_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr",
                                         "PropEKImp", "PropEK", "PropOptionalEK")
         
-        print("erf done")
+        print(erf_performance)
         
         # ERF with EK Priority
         erf_prio_full <- CV_erf(data = data, cv_folds = cv_folds, confirmatory_expert_rules = conf_rules, 
@@ -81,7 +83,7 @@ sample_variations <- function(conf_support = 0.01, sample_sizes = c(600, 400, 20
                                              "ClassErr", "PropEKImp", "PropEK",
                                              "PropOptionalEK")
         
-        print("erf prio done")
+        print(erf_prio_performance)
         
         # ERF with EK only
         erf_only_full <- CV_erf(data = data, cv_folds = cv_folds, confirmatory_expert_rules = conf_rules, 
@@ -108,7 +110,7 @@ sample_variations <- function(conf_support = 0.01, sample_sizes = c(600, 400, 20
                                              "ClassErr","PropEKImp", "PropEK",
                                              "PropOptionalEK")
         
-        print("erf only done")
+        print(erf_only_performance)
         
         # ERF without EK
         rf_full <- CV_erf(data = data, cv_folds = cv_folds)
@@ -125,7 +127,7 @@ sample_variations <- function(conf_support = 0.01, sample_sizes = c(600, 400, 20
         row.names(rf_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr",
                                        "PropEKImp", "PropEK", "PropOptionalEK")
         
-        print("rf done")
+        print(rf_performance)
         
         # PRE 
         pre_full <- CV_pre(data, cv_folds = cv_folds)
@@ -144,7 +146,7 @@ sample_variations <- function(conf_support = 0.01, sample_sizes = c(600, 400, 20
         row.names(pre_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr",
                                         "PropEKImp", "PropEK", "PropOptionalEK")
         
-        print("pre done")
+        print(pre_performance)
         
         out <- list(erf_performance,
                     erf_prio_performance,
@@ -157,12 +159,21 @@ sample_variations <- function(conf_support = 0.01, sample_sizes = c(600, 400, 20
 }
 
 x1 <- sample_variations()
+x1
 x2 <- sample_variations()
 x3 <- sample_variations()
 x4 <- sample_variations()
 x5 <- sample_variations()
+x6 <- sample_variations()
+x7 <- sample_variations()
 
-res_list <- list(x1, x2, x3, x4, x5)
+
+
+res_list <- list(x1, x2, x3, x4, x5, x6, x7)
+
+save.image(file = "simulation_sample_variations.RData")
+
+
 
 cv_sim <- function(res_list){
         cv_res_list <- list()
@@ -172,6 +183,8 @@ cv_sim <- function(res_list){
                                                        res_list[[3]][[i]],
                                                        res_list[[4]][[i]],
                                                        res_list[[5]][[i]],
+                                                       res_list[[6]][[i]],
+                                                       res_list[[7]][[i]],
                                                        along = 3), 1:2, mean)  
         }
         cv_res_list
@@ -179,12 +192,9 @@ cv_sim <- function(res_list){
 
 
 final <- cv_sim(res_list)
-
 final
 names(final) <- c("erf_performance", "erf_prio_performance", "erf_only_performance", "rf_performance", "pre_performance")
 
-final$erf_performance
-# Probe Expert only
 
 
 
@@ -200,26 +210,29 @@ PropOptionalEK <- unlist(c(final$erf_performance[7, ], final$erf_prio_performanc
 
 comparison_df <- data.frame(NTerms = NTerms, AvgRuleLength = AvgRuleLength, AUC = AUC, ClassAcc = ClassAcc,
                             PropEKImp = PropEKImp, PropEK = PropEK, PropOptionalEK = PropOptionalEK,
-                            Model = c(rep("ERF", 4), rep("ERF EK Prio", 4), rep("ERF EK only", 4), rep("RuleFit", 4),rep("PRE", 4)), 
-                            Sample = rep(c("full (1000)", "600", "400", "200"),5))
+                            Model = c(rep("ERF", 4), rep("ERF, EK prio", 4), rep("ERF, EK only", 4), rep("RuleFit", 4),rep("PRE", 4)), 
+                            Sample = rep(c("1000", "600", "400", "200"),5))
 
 comparison_df
+
+
+
 
 # 1. NTerms Plot
 p1 <- ggplot(comparison_df, 
         aes(x = Sample, y=NTerms, color = Model, group = Model)) +
-        geom_point(size = 3) + geom_line(size = 1.5) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
         scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
-        scale_y_continuous(limits = c(0, 60)) +
-        labs(title = "Model complexity for varying dataset sizes", x ="dataset size", y = "Number of terms") + 
-        theme_minimal() + theme(plot.title = element_text(size=15),
-                                             legend.text=element_text(size=11),
+        scale_y_continuous(limits = c(0, 70)) +
+        labs(x ="dataset size", y = "Number of terms") + 
+        theme_minimal() + theme(plot.title = element_text(size=14),
+                                             legend.text=element_text(size=14),
                                              text = element_text(size = 14), 
-                                             axis.text = element_text(size = 12), 
+                                             axis.text = element_text(size = 14),
                                              legend.position = "right")
 
 p1
-pdf("NTerms_samplesize_simulation.pdf")
+pdf("NTerms_de_simulation.pdf")
 p1
 dev.off()
 
@@ -227,17 +240,17 @@ dev.off()
 
 p2 <- ggplot(comparison_df, 
         aes(x = Sample, y=AvgRuleLength, color = Model, group = Model)) +
-        geom_point(size = 3) + geom_line(size = 1.5) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
         scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
-        labs(title = "Rule complexity for varying dataset sizes", x ="dataset size", y = "Average rule length") + 
-        theme_minimal() + scale_y_continuous(limits = c(0, 3)) + theme(plot.title = element_text(size=15),
-                                                     legend.text=element_text(size=11),
+        labs(x ="dataset size", y = "Average rule length") + 
+        theme_minimal() + scale_y_continuous(limits = c(0, 3)) + theme(plot.title = element_text(size=14),
+                                                     legend.text=element_text(size=14),
                                                      text = element_text(size = 14), 
-                                                     axis.text = element_text(size = 12),
+                                                     axis.text = element_text(size = 14),
                                                      legend.position = "right") 
 
 p2
-pdf("rulelength_samplesize_simulation.pdf")
+pdf("rulelength_de_simulation.pdf")
 p2
 dev.off()
 
@@ -247,17 +260,17 @@ dev.off()
 
 p3 <- ggplot(comparison_df, 
         aes(x = Sample, y=AUC, color = Model, group = Model)) +
-        geom_point(size = 3) + geom_line(size = 1.5) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
         scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
-        labs(title = "Predictive performance for varying dataset sizes", x ="dataset size", y = "AUC") + 
-        theme_minimal() + scale_y_continuous(limits = c(0.5, 1)) + theme(plot.title = element_text(size=15),
-                                                                         legend.text=element_text(size=11),
+        labs(x ="dataset size", y = "AUC") + 
+        theme_minimal() + scale_y_continuous(limits = c(0.5, 1)) + theme(plot.title = element_text(size=14),
+                                                                         legend.text=element_text(size=14),
                                                                          text = element_text(size = 14), 
-                                                                         axis.text = element_text(size = 12),
+                                                                         axis.text = element_text(size = 14),
                                                                          legend.position = "right") 
 
 p3
-pdf("AUC_samplesize_simulation.pdf")
+pdf("AUC_de_simulation.pdf")
 p3
 dev.off()
 
@@ -266,16 +279,16 @@ dev.off()
 
 p4 <- ggplot(comparison_df, 
         aes(x = Sample, y= ClassAcc, color = Model, group = Model)) +
-        geom_point(size = 4) + geom_line(size = 1.5) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
         scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
-        labs(title = "Predictive performance for varying dataset sizes", x ="dataset size", y = "Classification Accuracy") + 
-        theme_minimal() + scale_y_continuous(limits = c(0.5, 1)) + theme(plot.title = element_text(size=15),
-                                                                         legend.text=element_text(size=11),
+        labs(x ="dataset size", y = "Classification Accuracy") + 
+        theme_minimal() + scale_y_continuous(limits = c(0.5, 1)) + theme(plot.title = element_text(size=14),
+                                                                         legend.text=element_text(size=14),
                                                                          text = element_text(size = 14), 
-                                                                         axis.text = element_text(size = 12),
+                                                                         axis.text = element_text(size = 14),
                                                                          legend.position = "right") 
 p4
-pdf("CalssAcc_samplesize_simulation.pdf")
+pdf("CalssAcc_de_simulation.pdf")
 p4
 dev.off()
 
@@ -283,17 +296,18 @@ dev.off()
 
 p5 <- ggplot(comparison_df, 
         aes(x = Sample, y=PropEKImp, color = Model, group = Model)) +
-        geom_point(size = 3) + geom_line(size = 1.5) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
         scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
-        labs(title = "Proportion of EK for varying dataset sizes", x ="dataset size", y = "Proportion of EK among the 10 most important terms") + 
-        scale_y_continuous(limits = c(0, 1)) + theme(plot.title = element_text(size=15),
-                                                     legend.text=element_text(size=11),
+        labs(x ="dataset size", y = "Proportion of EK among the 10 most important terms") + 
+        theme_minimal() +
+        scale_y_continuous(limits = c(0, 1)) + theme(plot.title = element_text(size=14),
+                                                     legend.text=element_text(size=14),
                                                      text = element_text(size = 14), 
-                                                     axis.text = element_text(size = 12), 
+                                                     axis.text = element_text(size = 14), 
                                                      legend.position = "right")
 
 p5
-pdf("PropEKImp_samplesize_simulation.pdf")
+pdf("PropEKImp_de_simulation.pdf")
 p5
 dev.off()
 
@@ -302,35 +316,48 @@ dev.off()
 
 p6 <- ggplot(comparison_df, 
         aes(x = Sample, y=PropEK, color = Model, group = Model)) +
-        geom_point(size = 3) + geom_line(size = 1.5) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
+        geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
         scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-        labs(title = "Proportion of EK for varying dataset sizes", x ="dataset size", y = "Proportion of EK") + 
-        theme_minimal() + theme(plot.title = element_text(size=15),
-                                legend.text=element_text(size=11),
+        labs(x ="dataset size", y = "Proportion of EK") + 
+        theme_minimal() + theme(plot.title = element_text(size=14),
+                                legend.text=element_text(size=14),
                                 text = element_text(size = 14), 
-                                axis.text = element_text(size = 12),
+                                axis.text = element_text(size = 14),
                                 legend.position = "right") 
 p6
-pdf("PropEK_samplesize_simulation.pdf")
+pdf("PropEK_de_simulation.pdf")
 p6
 dev.off()
 
 
-# 7. Proportion of Expert Knowlegde in the final model
+save.image(file = "simulation_dataefficiency.RData")
+load("simulation_dataefficiency.RData")
 
-p7 <- ggplot(comparison_df, 
-             aes(x = Sample, y=PropOptionalEK, color = Model, group = Model)) +
-            geom_point(size = 3) + geom_line(size = 1.5) + scale_x_discrete(limits=c("full (1000)","600","400", "200")) +
-            scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-            labs(title = "Proportion of EK for varying dataset sizes", x ="dataset size.", y = "Proportion of optional EK") + 
-            theme_minimal() + theme(plot.title = element_text(size=15),
-                                    legend.text=element_text(size=11),
-                                    text = element_text(size = 14), 
-                                    axis.text = element_text(size = 12),
-                                    legend.position = "right") 
 
-p7
-pdf("PropOptionalEK_samplesize_simulation.pdf")
-p7
-dev.off()
+x1 <- sample_variations()
+x1
+x2 <- sample_variations()
+x3 <- sample_variations()
+x4 <- sample_variations()
+x5 <- sample_variations()
+x6 <- sample_variations()
+x7 <- sample_variations()
 
+res_list <- list(x1, x2, x3, x4, x5, x6, x7)
+
+
+combine_res <- function(res_list){
+        results <- res_list
+        frame <- results[[1]][[1]]
+        for(i in 1:length(res_list)){
+                for(j in 1:length(res_list[[i]])){
+                        results[[i]][[j]] <- data.frame((t(res_list[[i]][[j]])))
+                        frame <- rbind.data.frame(frame, results[[i]][[j]])
+                }
+        }
+frame
+}
+
+
+end <- combine_res(res_list)
+end

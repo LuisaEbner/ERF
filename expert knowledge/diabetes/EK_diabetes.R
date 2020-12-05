@@ -44,8 +44,8 @@ fdk_rules1 <-  c("Age<=39 & BP<=80 & BMI<25",
                 "Age>=50 & Age<=59 & BP<=80 & BMI>40", 
                 "Age>=60 & BP<=80 & BMI>40", 
                 "Age<=39 & BP>=81 & BMI>40", 
-                "Age>=40 & Age<=49 & BP>=81 &  BMI>40", 
-                "Age>=50 & Age<=59 &  BP>=81 & BMI>40", 
+                "Age>=40 & Age<=49 & BP>=81 & BMI>40", 
+                "Age>=50 & Age<=59 & BP>=81 & BMI>40", 
                 "Age>=60 & BP>=81 & BMI>40")
 
 

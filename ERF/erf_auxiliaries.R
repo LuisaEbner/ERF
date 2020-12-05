@@ -260,15 +260,15 @@ imp_terms <- function(model, n){
   nt <- length(model$features)-1
 
   if(n < nt){
-    largest_coefs <- sort(model[-1,2], decreasing = T)[1:n]
+    largest_coefs <- sort(abs(model[-1,2]), decreasing = T)[1:n]
   } else{
-    largest_coefs <- sort(model[-1,2], decreasing = T)[1:nt]
+    largest_coefs <- sort(abs(model[-1,2]), decreasing = T)[1:nt]
   }
 
   largest_pos <- c()
   if(length(largest_coefs) > 0){
     for(i in 1:length(largest_coefs)){
-      largest_pos[i] <- which(model[,2] == largest_coefs[i])
+      largest_pos[i] <- which(abs(model[,2]) == largest_coefs[i])
     } 
   }
 
@@ -308,7 +308,7 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                                    optional_cols = NULL,
                                    optional_penalty = 1,
                                    alpha = 1, standardize = F, 
-                                   n = 5, expert_only = F, print_output = T){
+                                   n = 5, print_output = T){
   
   
   # define penalties according to confirmatory and optional columns
@@ -328,32 +328,24 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   
   # find best lambda via cross validation
   
-  
-  if(expert_only == F){
-    cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", 
+  cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", 
                        alpha = alpha, 
                        standardize = standardize, 
                        penalty.factor = p.fac)
     
     if (s == "lambda.min"){
       lambda <- cvfit$lambda.min
-    } else{
+    } else if(s == "lambda.1se"){
       lambda <- cvfit$lambda.1se
+    } else{
+      lambda = 0
     }
     
     fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha,
                   standardize = standardize, penalty.factor = p.fac)
     # attribute coefficients
     coefs <- coef(fit, s=lambda)
-  } else{
-    lambda = 0
-    fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha,
-                  standardize = standardize)
-    # attribute coefficients
-    coefs <- coef(fit, s=lambda)
-  }
-
-  
+    
   
   # number of non-zero coefficients (= number of terms/features)
   n_terms = length(coefs[which(coefs != 0 ) ])-1
@@ -574,7 +566,8 @@ support_take <- function(rules, data, minsup){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 pre_for_comparison <- function(data = NULL, train = NULL, test = NULL, 
-                               train_frac = 0.7, ntrees = 250, n_imp = 10){
+                               train_frac = 0.7, ntrees = 250, n_imp = 10, 
+                               lambda = "lambda.1se"){
   
   if(is.null(train) & is.null(test) & !(is.null(data))){
     train.index <- createDataPartition(data$y, p = train_frac, list = FALSE)
@@ -583,7 +576,7 @@ pre_for_comparison <- function(data = NULL, train = NULL, test = NULL,
   } 
   
   pre <- pre(y ~ ., data = train, family = "binomial", ntrees = ntrees, 
-             penalty.par.val = "lambda.min")
+             penalty.par.val = lambda)
  
   coefficients <- coef(pre)$coefficient[coef(pre)$coefficient != 0] 
   nterms <- length(coefficients) -1

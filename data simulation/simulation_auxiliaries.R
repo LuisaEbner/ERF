@@ -338,7 +338,7 @@ adapt_names <- function(data){
   pos_names <- colnames(X)
   classic_names <- c()
   for (i in 1:ncol(X)){
-    classic_names[i] <- paste("Col",i,".", sep = "")
+    classic_names[i] <- paste("X",i,".", sep = "")
   }
   colnames(data) <- c(classic_names, "y")
   return(data)

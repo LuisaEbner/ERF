@@ -51,7 +51,7 @@ source("./ERF/erf_auxiliaries.R")
 #' @param minsup specifies the minimum value of support such that rules with support < minsup are removed. Higher values can be used to prevent overfitting.
 #' @param corelim specifies the minimum value of correlation where correlated rules are cleaned.
 #' @param alpha specifies the elastic-net mixing parameter with values between 0 and 1, where 1 represents the lasso penalty, and 0 the ridge penalty.
-#' @param s see function glmnet
+#' @param s see function glmnet: lambda.min, lambda.1se or "none" for no penalization
 #' @param standardize see function glmnet
 #' @param n_imp specifies the number of features (rules + linear terms) to be printed as most important features.
 #' @param print_output controls whether the elements of the function output are additionally printed to the console.
@@ -332,7 +332,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                                       optional_cols = optional_cols,
                                       optional_penalty = optional_penalty,
                                       alpha = alpha, standardize = standardize,
-                                      n = n_imp, expert_only = expert_only,
+                                      n = n_imp, 
                                       print_output = print_output)
     
     
@@ -478,7 +478,6 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                                       optional_penalty = optional_penalty,
                                       alpha = alpha,
                                       standardize = standardize, n = n_imp,
-                                      expert_only = expert_only,
                                       print_output = print_output)
     
     
