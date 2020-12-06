@@ -31,15 +31,15 @@ source("./ERF/erf_auxiliaries.R")
 # THE EXPERT RULEFIT IMPLEMENTATION
 
 #' @title ExpertRuleFit
-#' @description fits the Expert RuleFit model described in the MSc. Thesis "Complementing Prediction Rule Ensembles with Expert Knowledge" based on the work of Malte Nalenz for his model HorseRuleFit 
-#' @param X specifies a matrix containing the predictor attributes
+#' @description fits the Expert RuleFit model described in the MSc. Thesis "Complementing Prediction Rule Ensembles with Expert Knowledge" based on the RuleFit model of Friedman and Popescu. 
+#' @param X specifies a matrix containing the predictor attributes.
 #' @param y specifies a vector containing the binary response attribute.
 #' @param Xtest specifies a matrix containing the predictor attributes of the test set.
 #' @param ytest specifies a vector containing the binary response attribute.
 #' @param intercept specifies whether to include an intercept (highly recommended).
 #' @param optional_expert_rules specifies a character vector of expert-derived rules to be included to  the  set  of  data-generated  rules  as  candidate  base  classifiers  for  the  final model.
 #' @param confirmatory_expert_rules specifies a character vector of expert-derived rules to certainly be included as base classifiers in the final model. No penalty will be applied to the respective coefficients, which will yield a non-zero coefficient for the rule in the final model.
-#' @param expert_linear_terms specifies a character vector of expert-derived predictor attributes to be included as candidate base learners in the final model.
+#' @param expert_linear_terms specifies a character vector of expert-derived predictor attributes to be included as candidate base learners in the prediction model.
 #' @param confirmatory_linear_terms specifies a character vector of expert-derived predictor attributes to certainly be included as base learners in the final model. No penalty will be applied to the respective coefficients, which will yield a non-zero coefficient for the linear term in the final model.
 #' @param optional_penalty specifies the penalty factor applied to all optional_expert_rules and optional_linear_terms as a real value between 0 and 1.  May be used toprevent preference for data rules whose predictive relevance may partly resultfrom modeling noise in the data set.
 #' @param expert_only specifies whether ONLY Expert rules and -linear terms should be included as candidates to the final model.
@@ -337,7 +337,6 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
     
     
     # EK INFO
-    
     # all ensemble members (rules + linear terms)
     model_features <- regmodel$Results$features
     

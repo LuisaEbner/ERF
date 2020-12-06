@@ -205,15 +205,3 @@ prepare_cervicalcancer_data <- function(data, del_maj_missing = T,
   return(data)
 }
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Example
-# data <- read.csv(file = 'risk_factors_cervical_cancer.csv', header = T)
-# data_prep <- prepare_cervicalcancer_data(data = data, del_maj_missing = T,
-#                                     add_NA_features = F, impute_missing = T,
-#                                     target = "Biopsy", balance = T)
-
-
-
-
-

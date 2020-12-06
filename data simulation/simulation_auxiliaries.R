@@ -5,10 +5,9 @@
 ################################################################################
 
 # Libraries
-library(purrr)
-library(rlist)
+# library(purrr)
+# library(rlist)
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Functions
 
@@ -27,7 +26,6 @@ library(rlist)
 # 14. adapt_names
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 # 1. Generate input data
 
@@ -190,10 +188,6 @@ define_conditions <- function(n_rel_rules, rule_lengths,
   all_conditions
 }
 
-# conditions <- define_conditions(n_rel_rules, rule_lengths,
-#                                var_list_rules, sign_list_rules,
-#                                value_list_rules)
-# conditions
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -225,15 +219,6 @@ define_rules <- function(n_rel_rules, rule_lengths, conditions){
 }
 
 
-# rule_preds <- define_rules(n_rel_rules, rule_lengths, conditions)
-# rule_preds
-
-#===============================================================================
-
-# 3. create X as relevant to the outcome variable
-
-# dt <- createX(X, rule_preds, t = 0.025)
-# dt[1]
 
 #===============================================================================
 
@@ -251,8 +236,6 @@ sample_betas <- function(all_predictors, mu_beta, sigma_beta){
   betas
 }
 
-# betas <- sample_betas(rule_preds, mu_beta, sigma_beta)
-# betas
 
 #===============================================================================
 
@@ -268,9 +251,6 @@ sample_epsilon <- function(n_obs, mu_epsilon, sigma_epsilon){
   epsilon <- rnorm(n_obs, mu_epsilon, sigma_epsilon)
   epsilon
 }
-
-# epsilon <- sample_epsilon()
-# epsilon
 
 #===============================================================================
 
@@ -295,19 +275,6 @@ calc_linear_predictor <- function(dt_y, betas){
   linear_predictor
 }
 
-# dt_rules <- dt[2]
-# dt_lin <- X[, lin_preds]
-# dt_y <- cbind(dt_lin, dt_rules)
-# dt_y
-
-# linear_predictor <- calc_linear_predictor(dt_y, betas)
-# linear_predictor
-
-# Calculate outcome probabilities (logistic regression)
-
-# y1_prob <- round(1/(1 + exp(-(linear_predictor))),3)
-# y1_prob
-
 #===============================================================================
 
 #' @name sample_y
@@ -323,16 +290,13 @@ sample_y <- function(y1_prob){
   y
 }
 
-# y <- sample_y(y1_prob)
-# dt_y = cbind(dt_y, y1_prob, y)
 
 #===============================================================================
+
 # 6. Create simulation dataset
 
-# data <- cbind(X, y)
-
-#===============================================================================
-
+#' @name adapt_names
+#' @description changes the column names of all input attributes to "X1., x2.,..." and the target to "y".
 adapt_names <- function(data){
   X <- data[, -ncol(data)]
   pos_names <- colnames(X)

@@ -5,9 +5,9 @@
 ################################################################################
 
 # Libraries
-library(pre)
-library(purrr)
-library(rlist)
+# library(pre)
+# library(purrr)
+# library(rlist)
 
 # external functions
 source('./data simulation/simulation_auxiliaries.R')
@@ -25,7 +25,7 @@ source('./ERF/erf_auxiliaries.R')
 #' @param optional_lengths vector ranging from 1 to the max. complexity of relevant predictor rules, default = c(1, 2, 3, 4)
 #' @param weights weight vector defining the sampling probability of certain rule lengths, default = c(1/3, 1/4, 1/4, 1/6)
 #' @param mu_beta single number or vector of length n_vars defining the mean of the normal distribution(s) from which the betas are sampled, default = 0
-#' @param sigma_beta standard deviation of normal distributionfrom which the betas are sampled, default = 5
+#' @param sigma_beta standard deviation of normal distribution from which the betas are sampled, default = 5
 #' @param mu_epsilon single number or vector of length n_obs defining the mean of the normal distribution from which random noise is sampled, default = 0
 #' @param sigma_epsilon standard deviation of normal distribution from which random noise is sampled, default = 0.025
 #' @return a list of the following components:
@@ -37,11 +37,11 @@ create_simulation <- function(n_vars = 100, n_obs = 2000,
                               mu = 0, sigma = 1, 
                               n_rule_vars = 20, 
                               n_rel_rules = 10, 
-                              optional_lengths = c(1, 2),
-                              weights = c(1/2, 1/2),
+                              optional_lengths = c(1, 2, 3),
+                              weights = c(1/3, 1/3, 1/3),
                               t = 0.01,
                               mu_beta = 0, sigma_beta = 5, 
-                              mu_epsilon = 0, sigma_epsilon = 0.25){
+                              mu_epsilon = 0, sigma_epsilon = 0.01){
   
   # 1. Generate input variables x_1,...,x_nvars, 
   #    each with n_obs values sampled from N(mu,sigma)

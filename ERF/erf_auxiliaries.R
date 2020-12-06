@@ -37,7 +37,7 @@ library(cvAUC)
 # 14. CV_erf
 # 15. concept_drift_split
 
-# + Functions adopted from the MSc. Thesis of Malte Nalenz
+# + Functions adopted from the MSc. project of Malte Nalenz
 
 # 1. take1
 # 2. genrulesRF
@@ -80,8 +80,7 @@ createERFsets <- function(data, train_frac, n_obs = NULL, pos_class = 1, target_
       data <- sample_n(data, n_obs)
     }
   }
-  
-  #print(data)
+
   
   # split training- and test data
   train.index <- createDataPartition(data$y, p = train_frac, list = FALSE)
@@ -287,6 +286,8 @@ imp_terms <- function(model, n){
 #' @param ytest optional vector of the target attribute (test set)
 #' @param s: string, either "lambda.min" or "lambda.1se". "lambda.min" searches the value of lambda that gives minimum mean cross-validated error, "lambda.1se" searches the most regularized model such that error is within one standard error of the minimum. 
 #' @param confirmatory_cols: vector of numbers indicating the column positions of attributes to be spared from penalization.
+#' @param optional_cols: vector of numbers indicating the column positions of optional EK which should receive less penalization.
+#' @param optional_penalty: numeric value between 0 and 1 indicating by how much the optional EK should be preferred over data rules in terms of penalization. The smaller the value, the less is it penalized.
 #' @param alpha: see function glmnet
 #' @param standardize see function glmnet
 #' @param n number of most important terms to print as part of the ERF model output
@@ -327,7 +328,6 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
   }
   
   # find best lambda via cross validation
-  
   cvfit <- cv.glmnet(as.matrix(X), y, family = "binomial", 
                        alpha = alpha, 
                        standardize = standardize, 
@@ -343,48 +343,49 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
     
     fit <- glmnet(as.matrix(X), y, family = "binomial", alpha = alpha,
                   standardize = standardize, penalty.factor = p.fac)
+    
     # attribute coefficients
     coefs <- coef(fit, s=lambda)
     
   
-  # number of non-zero coefficients (= number of terms/features)
-  n_terms = length(coefs[which(coefs != 0 ) ])-1
-  
-  Results <- data.frame( features = coefs@Dimnames[[1]][which(coefs != 0 ) ], 
-                         coefficients    = coefs       [ which(coefs != 0 ) ]
-  )
-  
-  #Results$features <- positions_to_names(X, Results$features)
-  #print(length(Results$features))
-  
-  # Average rule length
-  avgrulelen <- average_rule_length(Results$features)
-  
-  
-  # Feature importance
-  important_terms <- imp_terms(Results, n)
-  
-  if (is.null(Xtest) == T) {
-    result <- list(Results = Results, s = s, NTerms = n_terms,
-                   lambda =lambda, PenaltyFactor = p.fac, AvgRuleLength = avgrulelen, 
-                   ImpFeatures = important_terms)
+    # number of non-zero coefficients (= number of terms/features)
+    n_terms = length(coefs[which(coefs != 0 ) ])-1
     
-  } else{
-    pred_prob <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "response")
-    pred_class <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "class")
-    predictions <- as.numeric(pred_class)
-    conf_mat <- table(pred = pred_class,true = ytest)
-    auc <-  auc(ytest, pred_prob)
-    ce <-   ce(ytest, as.integer(pred_class))
+    Results <- data.frame( features = coefs@Dimnames[[1]][which(coefs != 0 ) ], 
+                           coefficients    = coefs       [ which(coefs != 0 ) ]
+    )
     
-    result <- list(Results = Results, s = s,
-                   NTerms = n_terms, lambda =lambda, 
-                   ConfusionMatrix = conf_mat, AUC = auc, CE = ce, PenaltyFactor = p.fac,
-                   Predictions = predictions, AvgRuleLength = avgrulelen,
-                   ImpFeatures = important_terms)
+    #Results$features <- positions_to_names(X, Results$features)
+    #print(length(Results$features))
     
-  }
-  result
+    # Average rule length
+    avgrulelen <- average_rule_length(Results$features)
+    
+    
+    # Feature importance
+    important_terms <- imp_terms(Results, n)
+    
+    if (is.null(Xtest) == T) {
+      result <- list(Results = Results, s = s, NTerms = n_terms,
+                     lambda =lambda, PenaltyFactor = p.fac, AvgRuleLength = avgrulelen, 
+                     ImpFeatures = important_terms)
+      
+    } else{
+      pred_prob <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "response")
+      pred_class <- predict(fit, newx = as.matrix(Xtest), s = lambda, type = "class")
+      predictions <- as.numeric(pred_class)
+      conf_mat <- table(pred = pred_class,true = ytest)
+      auc <-  auc(ytest, pred_prob)
+      ce <-   ce(ytest, as.integer(pred_class))
+      
+      result <- list(Results = Results, s = s,
+                     NTerms = n_terms, lambda =lambda, 
+                     ConfusionMatrix = conf_mat, AUC = auc, CE = ce, PenaltyFactor = p.fac,
+                     Predictions = predictions, AvgRuleLength = avgrulelen,
+                     ImpFeatures = important_terms)
+      
+    }
+    result
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -565,6 +566,9 @@ support_take <- function(rules, data, minsup){
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#' @name pre_for_comparison
+#' @description applies the PRE model of Marolein Fokkema and returns the same results as ERF models to be comparable.
+
 pre_for_comparison <- function(data = NULL, train = NULL, test = NULL, 
                                train_frac = 0.7, ntrees = 250, n_imp = 10, 
                                lambda = "lambda.1se"){
@@ -613,20 +617,11 @@ pre_for_comparison <- function(data = NULL, train = NULL, test = NULL,
   out
 }
 
-# Example
-# source("erf_diabetes_dataprep.R")
-# source("erf_main.R")
-# data <- read.csv(file = 'diabetes.csv', header = T)
-# data <- prepare_diabetes_data(data)
-# train.index <- createDataPartition(data$y, p = 0.7, list = FALSE)
-# train <- data[ train.index,]
-# test  <- data[-train.index,]
-
-# pre_for_comparison(train, test)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Cross Validation for PRE models
+#' @name CV_pre
+#' @description cross validates the results of the cv_measures within PRE models.
 
 CV_pre <- function(data = NULL, cv_folds = 10, seed = 1432, 
                    train_frac = 0.7, ntrees = 250, n_imp = 10){
@@ -669,9 +664,8 @@ CV_pre <- function(data = NULL, cv_folds = 10, seed = 1432,
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-
-# Cross Validation:
+#' @name CV_erf
+#' @description cross validates the results listed as cv_measures for all ERF models. Takes all of ERF parameters.
 
 CV_erf <- function(data, cv_folds = 10, seed = 34593, intercept=T,
                    optional_expert_rules = NULL, confirmatory_expert_rules = NULL,  
@@ -712,10 +706,8 @@ CV_erf <- function(data, cv_folds = 10, seed = 34593, intercept=T,
     }
   }
   
-  #print(res)
   cv_res <- colMeans(res)
   
-  #print(cv_res)
   
   out = list(NTerms = cv_res[1], AvgRuleLength = cv_res[2], AUC = cv_res[3], 
              ClassErr = cv_res[4], PropEKImp = cv_res[5], PropEK = cv_res[6],
@@ -803,7 +795,9 @@ modelcomp <- function(erf1, erf2 = NULL , erf3 = NULL,
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# creates artificial concept drift
+#' @name concept_drift_split
+#' @description separates a dataset into training and test data while artificially creating a concept drift between training and test set.
+#' @param condition a string such as "Age < 30". In this case the training set will contain 95% (param cond) of patients younger than 30 and the test set less than 5%
 
 concept_drift_split <- function(data, condition, train_frac = 0.7, cond = 0.95){
   n_train = floor(train_frac*nrow(data))
@@ -873,10 +867,13 @@ genrulesRF = function(X, y, nt,S ,L){
   sf     = min(1, (11*sqrt(N)+1)/N)
   mn     = L*2
   ns     = S
-  forest = randomForest(x = X, y=y, sampsize = sf*N, replace=F, ntree =nt, maxnodes=mn, nodesize = ns)
+  forest = randomForest(x = X, y=y, sampsize = sf*N, replace=F, ntree =nt,
+                        maxnodes=mn, nodesize = ns)
   
   treelist = RF2List(forest)
-  rules    = lapply(1:L, function(d)as.character(extractRules(treeList=treelist, X=X, ntree=nt, maxdepth=d)))
+  rules    = lapply(1:L, function(d)as.character(extractRules(treeList=treelist,
+                                                              X=X, ntree=nt,
+                                                              maxdepth=d)))
   rules    = unique(unlist(rules))
   rules    = rules[take1(length(rules))]
   rulesmat = matrix(rules)
@@ -900,11 +897,15 @@ genrulesGBM = function(X, y, nt, S, L) {
   if (is.numeric(y)==F){
     y = as.numeric(y)-1
   }
-  model1 = gbm.fit(x = X, y=y, bag.fraction = sf, n.trees =nt, interaction.depth = L
-                   , shrinkage = 0.01, distribution = dist, verbose = F, n.minobsinnode = ns)
+  model1 = gbm.fit(x = X, y=y, bag.fraction = sf, n.trees =nt,
+                   interaction.depth = L, shrinkage = 0.01, distribution = dist,
+                   verbose = F,
+                   n.minobsinnode = ns)
   
   treelist = GBM2List(model1, X)
-  rules    = lapply(1:L, function(d)as.character(extractRules(treeList=treelist, X=X, ntree=nt, maxdepth=d)))
+  rules    = lapply(1:L, function(d)as.character(extractRules(treeList=treelist,
+                                                              X=X, ntree=nt, 
+                                                              maxdepth=d)))
   rules    = unique(unlist(rules))
   rules    = rules[take1(length(rules))]
   rulesmat = matrix(rules)
@@ -962,6 +963,4 @@ createXtest = function(X, rules) {
   }
   data.matrix(Xr)
 }
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -7,7 +7,6 @@
 # 1. Factual Domain Knowledge
 # 2. Heuristic Expert Knowledge
 
-
 #===============================================================================
 #                        1. FACTUAL DOMAIN KNOWLEDGE
 #===============================================================================
@@ -28,16 +27,13 @@
 
 
 # Corresponding expert rules
-fdk_rules1 <- c("STDs.HPV == 1", # STDs.HPV == 1
-               "Smoking ==1 ", #Smoking == 1
+fdk_rules1 <- c("STDs.HPV == 1",
+               "Smoking ==1 ", 
                "STDs.HIV == 1",
                "STDs.Hepatitis.B == 1",
                "First.sexual.intercourse<14",
                "(((Age - First.sexual.intercourse)*Number.of.sexual.partners)/10)>4",
                "Hormonal.Contraceptives..years.>5")
-
-#"any(c(STDs.genital.herpes, STDs.molluscum.contagiosum)), 
-#STDs.pelvic.inflammatory.disease, STDs.syphilis)>0)", 
 
 
 # b) Rules Extracted from 'The American Cancer Society Guidelines for the
@@ -73,4 +69,31 @@ fdk_linear <- c( "Num.of.pregnancies", "Number.of.sexual.partners",
 #                        2. HEURISTIC EXPERT KNOWLEDGE
 #===============================================================================
 
-# interview information following
+# interview with Dr. med. Volker Meltzer
+
+# a) Linear Terms
+
+# 1. number.of.sexual.partners
+# 2. First.sexual.intercourse
+
+ek_linear <- c("Number.of.sexual.partners", "First.sexual.intercourse")
+
+# b) Rules
+
+# 0. HIV, Smoking, increased
+# 1. HPV, high
+# 2. Number.of.sexual.partners high (>5) + Smoking, increased
+# 3. Number.of.sexual.partners high (>5) + Smoking + First.sexual.intercourse < 14
+# 4. STDs.condylomatis, increased
+# 5. STDs.genital.herpes, low
+# 6. IUD, low
+# 7. Number.of.sexual.partners high (>5) + Smoking + inflammatorydisease, high
+
+ek_rules <- c("STDs.HPV == 1",
+              "Smoking == 1 ", 
+              "STDs.HIV == 1",
+              "Number.of.sexual.partners > 5 & Smoking == 1",
+              "STDs.condylomatis == 1",
+              "STDs.genital.herpes == 1",
+              "Intra.uterine.device == 1",
+              "Number.of.sexual.partners > 5 & Somking == 1 & STDs.pelvic.inflammatory.disease ==1")
