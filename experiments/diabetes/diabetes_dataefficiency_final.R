@@ -22,7 +22,7 @@ rules <- c(fdk_rules1, fdk_rules2, hek_rules)
 
 #  Linear Terms
 # confirmatory: those confirmed by experts and literature!
-# hier könnte man auch alle conf setzen!
+# hier kC6nnte man auch alle conf setzen!
 
 conf_linear <- c("Age", "BMI")
 opt_linear <- c("DPF", "BP", "Glucose")
@@ -425,6 +425,7 @@ s_erf_only <- ExpertRuleFit(X =X, y=y, Xtest = Xtest, ytest = ytest,
                             expert_only = T, s = "lambda.1se")
 s_rf <- ExpertRuleFit(X =X, y=y, Xtest = Xtest, ytest = ytest,s = "lambda.1se") 
 s_pre <- pre_for_comparison(train = train, test = test)
+s_pre
 
 
 save.image(file = "diabetes_de_setting2.RData")
