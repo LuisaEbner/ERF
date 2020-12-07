@@ -83,7 +83,7 @@ ExpertRuleFit = function(X=NULL, y=NULL, Xtest=NULL, ytest=NULL, intercept=T,
                          optional_linear_terms=NULL, confirmatory_linear_terms = NULL,
                          expert_only = F, optional_penalty = 1, ntree=250, 
                          ensemble= "GBM", mix=0.5, L=3, S=6, minsup=.025, corelim = 1, 
-                         alpha = 0.8, s = "lambda.min", standardize = F,
+                         alpha = 0.9, s = "lambda.1se", standardize = F,
                          n_imp = 10, print_output = T) {
   
   # combine optional and confirmatory EK 

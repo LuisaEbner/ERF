@@ -2,7 +2,7 @@
 #                                                                              #
 #             Can Expert Knowledge increase Data Efficiency?                   #
 #                                                                              #
-#                   Experiments on Predicting Diabetes                         #
+#                   Experiments with simulated data                            #
 #                                                                              #
 ################################################################################ 
 
@@ -13,8 +13,8 @@
 source("./data simulation/simulation_main.R")
 source("./ERF/erf_main.R")
 
-# todo: try lambda.min
-
+#' @name sample_variations
+#' @description simulates datasets of varying sizes, simulates corresponding EK and then trains different model settings using cross validation. Eventually, the results are combined in one data.frame.
 sample_variations <- function(sample_sizes = c(600, 400, 200), 
                               cv_folds = 5, optional_penalty = 0.5){
         simulation <- create_simulation(n_vars = 50, n_obs = 1000,
@@ -159,7 +159,6 @@ sample_variations <- function(sample_sizes = c(600, 400, 200),
 }
 
 x1 <- sample_variations()
-x1
 x2 <- sample_variations()
 x3 <- sample_variations()
 x4 <- sample_variations()
@@ -167,13 +166,9 @@ x5 <- sample_variations()
 x6 <- sample_variations()
 x7 <- sample_variations()
 
-
-
 res_list <- list(x1, x2, x3, x4, x5, x6, x7)
 
-save.image(file = "simulation_sample_variations.RData")
-
-
+#save.image(file = "simulation_sample_variations.RData")
 
 cv_sim <- function(res_list){
         cv_res_list <- list()
@@ -198,8 +193,7 @@ names(final) <- c("erf_performance", "erf_prio_performance", "erf_only_performan
 
 
 
-# NTerms Plot
-
+# Dataframe for comparison plots
 NTerms <- unlist(c(final$erf_performance[1, ], final$erf_prio_performance[1, ], final$erf_only_performance[1, ], final$rf_performance[1, ], final$pre_performance[1, ]), use.names = F)
 AvgRuleLength <- unlist(c(final$erf_performance[2, ], final$erf_prio_performance[2, ], final$erf_only_performance[2, ], final$rf_performance[2, ], final$pre_performance[2, ]), use.names = F)
 AUC <- unlist(c(final$erf_performance[3, ], final$erf_prio_performance[3, ], final$erf_only_performance[3, ], final$rf_performance[3, ], final$pre_performance[3, ]), use.names = F)
@@ -214,7 +208,6 @@ comparison_df <- data.frame(NTerms = NTerms, AvgRuleLength = AvgRuleLength, AUC 
                             Sample = rep(c("1000", "600", "400", "200"),5))
 
 comparison_df
-
 
 
 
@@ -237,7 +230,6 @@ p1
 dev.off()
 
 # 2. Average Rule Length Plot
-
 p2 <- ggplot(comparison_df, 
         aes(x = Sample, y=AvgRuleLength, color = Model, group = Model)) +
         geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
@@ -257,7 +249,6 @@ dev.off()
 
 
 # 3. AUC Plot
-
 p3 <- ggplot(comparison_df, 
         aes(x = Sample, y=AUC, color = Model, group = Model)) +
         geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
@@ -276,7 +267,6 @@ dev.off()
 
 
 # 4. Classification Accuracy Plot
-
 p4 <- ggplot(comparison_df, 
         aes(x = Sample, y= ClassAcc, color = Model, group = Model)) +
         geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
@@ -293,7 +283,6 @@ p4
 dev.off()
 
 # 5. Proportion of Expert Knowledge among the most important terms
-
 p5 <- ggplot(comparison_df, 
         aes(x = Sample, y=PropEKImp, color = Model, group = Model)) +
         geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
@@ -312,8 +301,7 @@ p5
 dev.off()
 
 
-# 6. Proportion of Expert Knowlegde in the final model
-
+# 6. Proportion of Expert Knowlegde overall
 p6 <- ggplot(comparison_df, 
         aes(x = Sample, y=PropEK, color = Model, group = Model)) +
         geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("1000","600","400", "200")) +
@@ -329,35 +317,4 @@ pdf("PropEK_de_simulation.pdf")
 p6
 dev.off()
 
-
-save.image(file = "simulation_dataefficiency.RData")
-load("simulation_dataefficiency.RData")
-
-
-x1 <- sample_variations()
-x1
-x2 <- sample_variations()
-x3 <- sample_variations()
-x4 <- sample_variations()
-x5 <- sample_variations()
-x6 <- sample_variations()
-x7 <- sample_variations()
-
-res_list <- list(x1, x2, x3, x4, x5, x6, x7)
-
-
-combine_res <- function(res_list){
-        results <- res_list
-        frame <- results[[1]][[1]]
-        for(i in 1:length(res_list)){
-                for(j in 1:length(res_list[[i]])){
-                        results[[i]][[j]] <- data.frame((t(res_list[[i]][[j]])))
-                        frame <- rbind.data.frame(frame, results[[i]][[j]])
-                }
-        }
-frame
-}
-
-
-end <- combine_res(res_list)
-end
+#save.image(file = "simulation_dataefficiency.RData")

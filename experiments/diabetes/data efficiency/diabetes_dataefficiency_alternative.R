@@ -6,26 +6,31 @@
 #                                                                              #
 ################################################################################ 
 
+# External functions
 source("./experiments/diabetes/erf_diabetes_dataprep.R")
 source("./ERF/erf_main.R")
 
 
-# 1. Training Data 
+#===============================================================================
+#                                DATA
+#===============================================================================
+
 data <- read.csv(file = './data sets/diabetes.csv', header = T)
 data <- prepare_diabetes_data(data)
 
-# 2. Expert Knowledge
+#===============================================================================
+#                          EXPERT KNOWLEDGE
+#===============================================================================
+
 source("./expert knowledge/diabetes/EK_diabetes.R")
 
-# Rules
+# rules differentiated into confirmatory and optional acc. to their support on
+# the dataset
 rules <- c(fdk_rules1, fdk_rules2, hek_rules)
 conf_rules <- support_take(rules, data, 0.03)
 opt_rules <- setdiff(rules, conf_rules)
 
-#  Linear Terms
-# confirmatory: those confirmed by experts and literature!
-# hier kC6nnte man auch alle conf setzen!
-
+#  Linear terms
 conf_linear <- c("Age", "BMI", "DPF", "BP", "Glucose")
 
 #===============================================================================
@@ -182,8 +187,10 @@ rf_vec_400 <- unlist(rf_400, use.names=FALSE)
 rf_vec_600 <- unlist(rf_600, use.names=FALSE)
 rf_vec_full <- unlist(rf_full, use.names=FALSE)
 
-rf_performance <- data.frame(rf_full = rf_vec_full, rf_600 = rf_vec_600, rf_400 = rf_vec_400, rf_200 = rf_vec_200)
-row.names(rf_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
+rf_performance <- data.frame(rf_full = rf_vec_full, rf_600 = rf_vec_600, 
+                             rf_400 = rf_vec_400, rf_200 = rf_vec_200)
+row.names(rf_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", 
+                               "PropEKImp", "PropEK", "PropOptionalEK")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -211,9 +218,12 @@ pre_vec_400 <- unlist(pre_400, use.names=FALSE)
 pre_vec_600 <- unlist(pre_600, use.names=FALSE)
 pre_vec_full <- unlist(pre_full, use.names=FALSE)
 
-pre_performance <- data.frame(pre_full = c(pre_vec_full, 0,0,0), pre_600 = c(pre_vec_600,0,0,0), 
-                              pre_400 = c(pre_vec_400,0,0,0), pre_200 = c(pre_vec_200,0,0,0))
-row.names(pre_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
+pre_performance <- data.frame(pre_full = c(pre_vec_full, 0,0,0),
+                              pre_600 = c(pre_vec_600,0,0,0), 
+                              pre_400 = c(pre_vec_400,0,0,0), 
+                              pre_200 = c(pre_vec_200,0,0,0))
+row.names(pre_performance) <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr",
+                                "PropEKImp", "PropEK", "PropOptionalEK")
 
 #===============================================================================
 
@@ -227,30 +237,49 @@ pre_performance
 
 # NTerms Plot
 
-NTerms <- unlist(c(erf_performance[1, ], erf_prio_performance[1, ], erf_only_performance[1, ], rf_performance[1, ], pre_performance[1, ]), use.names = F)
-AvgRuleLength <- unlist(c(erf_performance[2, ], erf_prio_performance[2, ], erf_only_performance[2, ], rf_performance[2, ], pre_performance[2, ]), use.names = F)
-AUC <- unlist(c(erf_performance[3, ], erf_prio_performance[3, ], erf_only_performance[3, ], rf_performance[3, ], pre_performance[3, ]), use.names = F)
-ClassAcc <- unlist(c((1-erf_performance[4, ]), (1-erf_prio_performance[4, ]), (1-erf_only_performance[4, ]), (1-rf_performance[4, ]), (1-pre_performance[4, ])), use.names = F)
-PropEKImp <- unlist(c(erf_performance[5, ], erf_prio_performance[5, ], erf_only_performance[5, ], rf_performance[5, ], pre_performance[5, ]), use.names = F)
-PropEK <- unlist(c(erf_performance[6, ], erf_prio_performance[6, ], erf_only_performance[6, ], rf_performance[6, ], pre_performance[6, ]), use.names = F)
-PropOptionalEK <- unlist(c(erf_performance[7, ], erf_prio_performance[7, ], erf_only_performance[7, ], rf_performance[7, ], pre_performance[7, ]), use.names = F)
+NTerms <- unlist(c(erf_performance[1, ], erf_prio_performance[1, ], 
+                   erf_only_performance[1, ], rf_performance[1, ], 
+                   pre_performance[1, ]), use.names = F)
+AvgRuleLength <- unlist(c(erf_performance[2, ], erf_prio_performance[2, ],
+                          erf_only_performance[2, ], rf_performance[2, ],
+                          pre_performance[2, ]), use.names = F)
+AUC <- unlist(c(erf_performance[3, ], erf_prio_performance[3, ], 
+                erf_only_performance[3, ], rf_performance[3, ], 
+                pre_performance[3, ]), use.names = F)
+ClassAcc <- unlist(c((1-erf_performance[4, ]), (1-erf_prio_performance[4, ]),
+                     (1-erf_only_performance[4, ]), (1-rf_performance[4, ]), 
+                     (1-pre_performance[4, ])), use.names = F)
+PropEKImp <- unlist(c(erf_performance[5, ], erf_prio_performance[5, ], 
+                      erf_only_performance[5, ], rf_performance[5, ],
+                      pre_performance[5, ]), use.names = F)
+PropEK <- unlist(c(erf_performance[6, ], erf_prio_performance[6, ],
+                   erf_only_performance[6, ], rf_performance[6, ], 
+                   pre_performance[6, ]), use.names = F)
+PropOptionalEK <- unlist(c(erf_performance[7, ], erf_prio_performance[7, ],
+                           erf_only_performance[7, ], rf_performance[7, ], 
+                           pre_performance[7, ]), use.names = F)
 
-comparison_df <- data.frame(NTerms = NTerms, AvgRuleLength = AvgRuleLength, AUC = AUC, ClassAcc = ClassAcc,
-                            PropEKImp = PropEKImp, PropEK = PropEK, PropOptionalEK = PropOptionalEK,
-                            Model = c(rep("ERF", 4), rep("ERF prio", 4), rep("ERF only", 4), rep("RuleFit", 4),rep("PRE", 4)), 
+comparison_df <- data.frame(NTerms = NTerms, AvgRuleLength = AvgRuleLength,
+                            AUC = AUC, ClassAcc = ClassAcc,
+                            PropEKImp = PropEKImp, PropEK = PropEK, 
+                            PropOptionalEK = PropOptionalEK,
+                            Model = c(rep("ERF", 4), rep("ERF prio", 4), 
+                                      rep("ERF only", 4), rep("RuleFit", 4),
+                                      rep("PRE", 4)), 
                             Sample = rep(c("full (768)", "600", "400", "200"),5))
 
 comparison_df
 
-save.image(file = "diabetes_setting1_support_manyconf.RData")
-#load("diabetes_sample_variations_lambda1se.RData")
 
 # 1. NTerms Plot
 p1 <- ggplot(comparison_df, 
        aes(x = Sample, y=NTerms, color = Model, group = Model)) +
-       geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
-       scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "#995d30", "#0a565c")) + 
-       labs(title = "Model complexity for varying dataset sizes", x ="dataset size", y = "Number of terms") + 
+       geom_point(size = 3.2) + geom_line(size = 1) + 
+       scale_x_discrete(limits=c("full (768)","600","400", "200")) +
+       scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", 
+                                   "#995d30", "#0a565c")) + 
+       labs(title = "Model complexity for varying dataset sizes",
+            x ="dataset size", y = "Number of terms") + 
        theme_minimal() + theme(plot.title = element_text(size=14),
                                legend.text=element_text(size=14),
                                text = element_text(size = 14), 
@@ -264,12 +293,14 @@ p1
 dev.off()
 
 # 2. Average Rule Length Plot
-
 p2 <- ggplot(comparison_df, 
         aes(x = Sample, y=AvgRuleLength, color = Model, group = Model)) +
-        geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
-        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-        labs(title = "Rule complexity for varying dataset sizes", x ="dataset size", y = "Average rule length") + 
+        geom_point(size = 3.2) + geom_line(size = 1) + 
+        scale_x_discrete(limits=c("full (768)","600","400", "200")) +
+        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9",
+                                    "#995d30", "#0a565c")) + 
+        labs(title = "Rule complexity for varying dataset sizes", 
+             x ="dataset size", y = "Average rule length") + 
         theme_minimal() + theme(plot.title = element_text(size=14),
                                 legend.text=element_text(size=14),
                                 text = element_text(size = 14), 
@@ -283,12 +314,14 @@ p2
 dev.off()
 
 # 3. AUC Plot
-
 p3 <- ggplot(comparison_df, 
        aes(x = Sample, y=AUC, color = Model, group = Model)) +
-        geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
-        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-        labs(title = "Predictive performance for varying dataset sizes", x ="dataset size", y = "AUC") + 
+        geom_point(size = 3.2) + geom_line(size = 1) + 
+        scale_x_discrete(limits=c("full (768)","600","400", "200")) +
+        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9",
+                                    "#995d30", "#0a565c")) + 
+        labs(title = "Predictive performance for varying dataset sizes", 
+             x ="dataset size", y = "AUC") + 
         theme_minimal() + theme(plot.title = element_text(size=14),
                                 legend.text=element_text(size=14),
                                 text = element_text(size = 14), 
@@ -302,12 +335,14 @@ p3
 dev.off()
 
 # 4. Classification Error Plot
-
 p4 <- ggplot(comparison_df, 
        aes(x = Sample, y=ClassAcc, color = Model, group = Model)) +
-      geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
-      scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-      labs(title = "Predictive performance for varying dataset sizes", x ="dataset size", y = "Classification Accuracy") + 
+      geom_point(size = 3.2) + geom_line(size = 1) + 
+      scale_x_discrete(limits=c("full (768)","600","400", "200")) +
+      scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9",
+                                  "#995d30", "#0a565c")) + 
+      labs(title = "Predictive performance for varying dataset sizes",
+           x ="dataset size", y = "Classification Accuracy") + 
       theme_minimal() + theme(plot.title = element_text(size=14),
                               legend.text=element_text(size=14),
                               text = element_text(size = 14), 
@@ -322,12 +357,15 @@ dev.off()
 
 
 # 5. Proportion of Expert Knowledge among the most important terms
-
 p5 <- ggplot(comparison_df, 
              aes(x = Sample, y=PropEKImp, color = Model, group = Model)) +
-             geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
-             scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-             labs(title = "Proportion of EK for varying dataset sizes", x ="dataset size", y = "Proportion of EK among the 10 most important terms") + 
+             geom_point(size = 3.2) + geom_line(size = 1) +
+             scale_x_discrete(limits=c("full (768)","600","400", "200")) +
+             scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9",
+                                         "#995d30", "#0a565c")) + 
+             labs(title = "Proportion of EK for varying dataset sizes", 
+                  x ="dataset size", 
+                  y = "Proportion of EK among the 10 most important terms") + 
              theme_minimal() + theme(plot.title = element_text(size=14),
                                      legend.text=element_text(size=14),
                                      text = element_text(size = 14), 
@@ -340,12 +378,14 @@ p5
 dev.off()
 
 # 6. Proportion of Expert Knowledge in the final model
-
 p6 <- ggplot(comparison_df, 
         aes(x = Sample, y=PropEK, color = Model, group = Model)) +
-        geom_point(size = 3.2) + geom_line(size = 1) + scale_x_discrete(limits=c("full (768)","600","400", "200")) +
-        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#995d30", "#0a565c")) + 
-        labs(title = "Proportion of EK for varying dataset sizes", x ="dataset size", y = "Proportion of EK") + 
+        geom_point(size = 3.2) + geom_line(size = 1) + 
+        scale_x_discrete(limits=c("full (768)","600","400", "200")) +
+        scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9",
+                                    "#995d30", "#0a565c")) + 
+        labs(title = "Proportion of EK for varying dataset sizes",
+             x ="dataset size", y = "Proportion of EK") + 
         theme_minimal() + theme(plot.title = element_text(size=14),
                                 legend.text=element_text(size=14),
                                 text = element_text(size = 14), 
@@ -357,6 +397,3 @@ pdf("PropEK_de_diabetes.pdf")
 p6
 dev.off()
 
-
-save.image(file = "diabetes_de_setting1.RData")
-#load("diabetes_sample_variations_lambda1se.RData")
