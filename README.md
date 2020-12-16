@@ -1,5 +1,15 @@
+---
+title: "README"
+author: "Luisa Ebner"
+date: "12/16/2020"
+output:
+  md_document:
+    variant: markdown_github
+---
+
 # ExpertRuleFit -
 ## Complementing Rule Ensembles with Expert Knowledge
+
 
 This repository includes the implementation of the ***ExpertRuleFit (ERF)*** model proposed in the Master Thesis **Expert RuleFit - Complementing Rule Ensembles with Expert Knowledge**. ERF is a novel machine learning model for binary classification that allows for a specified integration of expert knowledge in form of rules and linear terms.
 
@@ -22,7 +32,7 @@ The exploitation of expert knowledge/reasoning and training examples as compleme
 
 The basic usage and default settings of the ExpertRuleFit function are as follows:
 
-```{r, eval = FALSE, echo = FALSE}
+```{r, results = FALSE, eval = FALSE, warning=FALSE, message=FALSE}
 
 set.seed(42)
 diabetes.erf <- ExpertRuleFit(X, y, Xtest = NULL, ytest = NULL, intercept=T,
@@ -34,15 +44,15 @@ diabetes.erf <- ExpertRuleFit(X, y, Xtest = NULL, ytest = NULL, intercept=T,
                               ntree=250, ensemble= "GBM",mix=0.5, L=3, S=6,
                               minsup=.025, corelim = 1, alpha = 1,
                               s = "lambda.1se", n_imp = 10, 
-                              print_output = T, ...)
+                              print_output = T)
 ```
 
-The following arguments are mandatory:
+The following **arguments** are **mandatory**:
 
   - `X`: specifies a matrix containing the predictor attributes.
   - `y`: specifies a vector containing the binary target attribute.
   
-The remaining arguments are optional:
+The remaining **arguments** are **optional**:
 
   - `Xtest`: specifies a matrix containing the predictor attributes of the test set.
   - `ytest`: specifies a vector containing the binary target attribute.
@@ -54,14 +64,14 @@ The remaining arguments are optional:
   - `optional_penalty`: specifies the penalty factor applied to all `optional_expert_rules` and `optional_linear_terms` as a real value between 0 and 1.  May be used to prevent preference for data rules whose predictive relevance may partly result from modeling noise in the data set.
   - `expert_only`: specifies whether only expert rules and -linear terms should beincluded as candidates in the final model.
   - `ntree`: specifies the number of trees from which data rules are extracted.
-  - `ensemble`: specifies whether gradient boosting ("GBM"), random forest ("RF") or a mixture of both ("both") shall be employed to generate tree ensembles.
+  - `ensemble`: specifies whether gradient boosting (*GBM*), random forest (*RF*) or a mixture of both (*both*) shall be employed to generate tree ensembles.
   - `mix`: specifies the fraction of trees to ge generated via gradient boosting whenever `ensemble` is set to"both".
   - `L`: controls the complexity of data-generated rules whereby higher values lead to more complex rules.
   - `S`: controls the minimum number of observations per node in the tree growing process.
   - `minsup`: specifies the minimum value of support such that rules with support less than `minsup` are removed.  Higher values can be used to prevent overfitting.
   - `corelim`: specifies  the  minimum  value  of  correlation  from  which  correlated rules are cleaned.
   - `alpha`: specifies the elastic-net mixing parameter with values between 0 and 1, where 1 represents the lasso penalty and 0 the ridge penalty.
-  - `s`: specifies  the  choice  of  the λ-value,  where lambda.min indicates  the  value that gives the minimum mean cross-validated error and lambda.1se gives themost  regularized  model  such  that  error  is  within  one  standard  error  of  the minimum.
+  - `s`: specifies  the  choice  of  the *λ*-value,  where *lambda.min* indicates  the  value that gives the minimum mean cross-validated error and *lambda.1se *gives the most  regularized  model  such  that  error  is  within  one  standard  error  of  the minimum.
   - `n_imp`: specifies the number of base learners (rules + linear terms) to be printed in the model output as the most important ones.
   - `print_output`: controls whether the elements of the function output are additionally printed to the console.
   - `...` specifies additional arguments to be passed to the function `glmnet`.
@@ -75,9 +85,9 @@ To get a first impression of how the function `ExpertRuleFit()` works, a short i
 concentrations in different medical test settings. Eight numeric attributes were included as significant risk factors for an onset of
 diabetes. These are: *Pregnancies, Glucose, BP, SkinThickness, Insulin, BMI, DPF* and *Age*.
 
-```{r, eval = T, echo = F}
+```{r}
 
-source("./experiments/diabetes/erf_diabetes_dataprep.R")
+source("./results/diabetes/erf_diabetes_dataprep.R")
 source("./ERF/erf_main.R")
 
 # Diabetes UCI Data 
@@ -90,9 +100,9 @@ head(data)
 ```
 
 **Expert Knowledge** Factual medical expert knowledge may be extracted from textbooks, 
-clinical practice guidelines and expert interviews/assessments. Below, we see an exemplary set of guideline rules.
+clinical practice guidelines and expert interviews/assessments. Below, we see an exemplary set of rules we acquired from medical guidelines and expert interviews, respectively.
 
-```{r, eval = TRUE, echo = FALSE}
+```{r}
 
 
 source("./expert knowledge/diabetes/EK_diabetes.R")
@@ -135,7 +145,13 @@ opt_linear <- c("DPF", "BP", "Glucose")
 
 Thus, we specify the ERF model as:
 
-```{r, eval = T, echo = T}
+```{r}
+
+sets <- createERFsets(data, 0.7)
+X <- sets[[1]]
+y <- sets[[2]]
+Xtest <- sets[[3]]
+ytest <- sets[[4]]
 
 erf_diabetes <- ExpertRuleFit(X =X, y=y, Xtest = Xtest, ytest = ytest, 
                              confirmatory_expert_rules = conf_rules, 
@@ -145,7 +161,7 @@ erf_diabetes <- ExpertRuleFit(X =X, y=y, Xtest = Xtest, ytest = ytest,
                              s = "lambda.1se")
 ```
 
-The first few lines of the printed results provide the penalty parameter value lambda employed for selecting the final ensemble. By default, the '1.se' rule is used for selecting lambda, the number of base classifiers (rules + linear terms) used in the final model as well as the average number of conditions per rule.
+The first few lines of the printed results provide the penalty parameter value lambda employed for selecting the final ensemble. By default, the *1.se* rule is used for selecting lambda, the number of base classifiers (rules + linear terms) used in the final model as well as the average number of conditions per rule.
 
 Next, the printed results provide the rules and linear terms selected in the final ensemble, with their estimated coefficients. For rules, the `description` column provides the conditions. The `coefficient` column presents the estimated coefficient. These are regression coefficients, reflecting the expected increase in the response for a unit increase in the predictor, keeping all other predictors constant. For rules, the coefficient thus reflects the difference in the expected value of the response when the conditions of the rule are met, compared to when they are not. Accordingly, the most important 10 rules and linear terms are listed in the model output.
 

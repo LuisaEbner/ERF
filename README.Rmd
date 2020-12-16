@@ -32,7 +32,7 @@ The exploitation of expert knowledge/reasoning and training examples as compleme
 
 The basic usage and default settings of the ExpertRuleFit function are as follows:
 
-```{r, results = FALSE}
+```{r, results = FALSE, eval = FALSE, warning=FALSE, message=FALSE}
 
 set.seed(42)
 diabetes.erf <- ExpertRuleFit(X, y, Xtest = NULL, ytest = NULL, intercept=T,
@@ -44,7 +44,7 @@ diabetes.erf <- ExpertRuleFit(X, y, Xtest = NULL, ytest = NULL, intercept=T,
                               ntree=250, ensemble= "GBM",mix=0.5, L=3, S=6,
                               minsup=.025, corelim = 1, alpha = 1,
                               s = "lambda.1se", n_imp = 10, 
-                              print_output = T, ...)
+                              print_output = T)
 ```
 
 The following **arguments** are **mandatory**:
@@ -87,7 +87,7 @@ diabetes. These are: *Pregnancies, Glucose, BP, SkinThickness, Insulin, BMI, DPF
 
 ```{r}
 
-source("./experiments/diabetes/erf_diabetes_dataprep.R")
+source("./results/diabetes/erf_diabetes_dataprep.R")
 source("./ERF/erf_main.R")
 
 # Diabetes UCI Data 
@@ -146,6 +146,12 @@ opt_linear <- c("DPF", "BP", "Glucose")
 Thus, we specify the ERF model as:
 
 ```{r}
+
+sets <- createERFsets(data, 0.7)
+X <- sets[[1]]
+y <- sets[[2]]
+Xtest <- sets[[3]]
+ytest <- sets[[4]]
 
 erf_diabetes <- ExpertRuleFit(X =X, y=y, Xtest = Xtest, ytest = ytest, 
                              confirmatory_expert_rules = conf_rules, 
