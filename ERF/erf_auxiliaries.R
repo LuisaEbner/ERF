@@ -355,6 +355,12 @@ regularized_regression <- function(X, y, Xtest = NULL, ytest = NULL,
                            coefficients    = coefs       [ which(coefs != 0 ) ]
     )
     
+    Results1 <- Results[1, ]
+    Results2 <- Results[2:nrow(Results), ]
+    Results2 <- Results2[order(abs(Results2$coefficients), decreasing = TRUE), ]
+    
+    Results <- rbind(Results1, Results2)
+    
     #Results$features <- positions_to_names(X, Results$features)
     #print(length(Results$features))
     
@@ -672,7 +678,7 @@ CV_erf <- function(data, cv_folds = 10, seed = 34593, intercept=T,
                    optional_linear_terms=NULL, confirmatory_linear_terms = NULL,
                    expert_only = F, optional_penalty = 1,
                    ntree=250, ensemble = "GBM", mix=0.5, L=3, S=6, minsup=.025,
-                   corelim = 1, alpha = 1, s = "lambda.1se", 
+                   corelim = 1, alpha = 0.8, s = "lambda.1se", 
                    n_imp = 10){
   cv_measures <- c("NTerms", "AvgRuleLength", "AUC", "ClassErr", "PropEKImp", "PropEK", "PropOptionalEK")
   n_measures <- length(cv_measures)
