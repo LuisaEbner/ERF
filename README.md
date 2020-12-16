@@ -1,12 +1,3 @@
----
-title: "README"
-author: "Luisa Ebner"
-date: "12/16/2020"
-output:
-  md_document:
-    variant: markdown_github
----
-
 # ExpertRuleFit -
 ## Complementing Rule Ensembles with Expert Knowledge
 
