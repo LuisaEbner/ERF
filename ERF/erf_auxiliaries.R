@@ -722,6 +722,40 @@ CV_erf <- function(data, cv_folds = 10, seed = 34593, intercept=T,
   out
   
 }
+library(randomForest)
+
+CV_randomforest <- function(data, cv_folds = 10, seed = 34593){
+  cv_measures <- c("AUC", "ClassErr")
+  n_measures <- length(cv_measures)
+  res <- matrix(0, cv_folds, n_measures)
+  
+  
+  set.seed(seed)
+  
+  ids = sample(1:nrow(data))
+  fold = rep(1:10, length.out = nrow(data))
+  target_col = ncol(data)
+  y = as.factor(data[, target_col])
+  x = data[,-target_col]
+  for(i in 1:cv_folds){
+    xtrain = x[ids[fold != i], ]
+    ytrain = as.factor(y[ids[fold != i]])
+    xtest = x[ids[fold == i], ]
+    ytest = as.factor(y[ids[fold == i]])
+    model <- randomForest(xtrain, ytrain)
+    res[i, 1] <- auc(as.numeric(ytest)-1, as.numeric(predict(model, xtest, type = "prob")[,2]))
+    res[i, 2] <- ce(ytest, predict(model, xtest, type = "class"))
+    
+  }
+  
+  cv_res <- colMeans(res)
+  
+  
+  out = list(AUC = cv_res[1], ClassErr = cv_res[2])
+  
+  out
+  
+}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
